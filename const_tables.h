@@ -1,0 +1,8 @@
+//
+// Created by misha on 27/07/2022.
+//
+
+#ifndef ASSEMBLER_CONST_TABLES_H
+#define ASSEMBLER_CONST_TABLES_H
+
+#endif //ASSEMBLER_CONST_TABLES_H
