@@ -53,16 +53,16 @@ int base32WordToDecimal(const char *base32_word) {
  * @param decimal the decimal number to convert
  * @param base32_word The base32 word that will be returned.
  */
-void decimalToBase32Word(int decimal, char* base32_word) {
+void decimalToBase32Word(int decimal, char *base32_word) {
     // We assume a 2-digit base32 word
-    assert(decimal < (int)pow(BASE32, BASE32_WORD_SIZE));
+    assert(decimal < (int) pow(BASE32, BASE32_WORD_SIZE));
 
 //    char* base32_word = (char*)malloc(sizeof(char) * (BASE32_WORD_SIZE + 1));
 //    if (base32_word == NULL)
 //        exit(MEMORY_ALLOCATION_ERROR);
 
-    base32_word[0] = BASE32_DIGITS[(int)(decimal / BASE32)];
-    base32_word[1] = BASE32_DIGITS[(int)(decimal % BASE32)];
+    base32_word[0] = BASE32_DIGITS[(int) (decimal / BASE32)];
+    base32_word[1] = BASE32_DIGITS[(int) (decimal % BASE32)];
     base32_word[2] = '\0';
 }
 
@@ -71,12 +71,12 @@ void decimalToBase32Word(int decimal, char* base32_word) {
  *
  * @param binary A string of 1's and 0's
  */
-int binaryToDecimal(const char* binary) {
-    int binary_len = (int)strlen(binary);
+int binaryToDecimal(const char *binary) {
+    int binary_len = (int) strlen(binary);
     int decimal = 0;
 
     /* Calculating the weight of the most significant bit. */
-    int bit_weight = (int)pow(2, binary_len - 1);
+    int bit_weight = (int) pow(2, binary_len - 1);
     for (int i = 0; i < binary_len; ++i) {
         assert(binary[i] == '0' || binary[i] == '1');
 
@@ -91,13 +91,13 @@ int binaryToDecimal(const char* binary) {
 }
 
 /**
- * It converts a decimal number to a binary number.
+ * It converts a decimal number to a binary string of 1's and 0's.
  *
  * @param decimal The decimal number to convert to binary.
- * @param base32_word The base32 word that will be returned.
+ * @param binary The binary string that will be returned.
  */
-void decimalToBinary(int decimal, char* binary) {
-    int num_bits = (int)ceil(log2(decimal));
+void decimalToBinary(int decimal, char *binary) {
+    int num_bits = (int) ceil(log2(decimal));
     /* Checking that the number of bits is less than or equal to 10. */
     assert(num_bits <= BINARY_WORD_SIZE);
 //    char* binary = (char*)malloc(sizeof(char) * (num_bits + 1));
@@ -106,20 +106,19 @@ void decimalToBinary(int decimal, char* binary) {
 //        exit(MEMORY_ALLOCATION_ERROR);
 
     /* Calculating the weight of the most significant bit. */
-    int bit_weight = (int)pow(2, num_bits - 1);
+    int bit_weight = (int) pow(2, num_bits - 1);
     for (int i = 0; i < num_bits; ++i) {
         /* It checks if the bit is 1 or 0. */
         if (decimal / bit_weight >= 1) {
             binary[i] = '1';
             decimal -= bit_weight;
-        }
-        else {
+        } else {
             binary[i] = '0';
         }
 
         bit_weight /= 2;
     }
-    /* Adding a null character to the end of the actual binary string. */
+    /* Adding a null character to indicate the end of the actual binary string. */
     binary[num_bits] = '\0';
 }
 
