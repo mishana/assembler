@@ -11,8 +11,6 @@
 
 // Constants and MACROs
 #define BASE32 32
-#define BASE32_WORD_SIZE 2
-#define BINARY_WORD_SIZE 10
 
 
 char BASE32_DIGITS[] = {'!', '@', '#', '$', '%', '^', '&', '*', '<', '>',
@@ -31,7 +29,7 @@ int base32DigitToDecimal(char base32_digit) {
         if (BASE32_DIGITS[i] == base32_digit)
             return i;
     }
-    exit(BAD_BASE32_DIGIT_ERROR);
+    errorWithMsg("Bad Base32 Digit ERROR!");
 }
 
 /**
@@ -59,7 +57,7 @@ void decimalToBase32Word(int decimal, char *base32_word) {
 
 //    char* base32_word = (char*)malloc(sizeof(char) * (BASE32_WORD_SIZE + 1));
 //    if (base32_word == NULL)
-//        exit(MEMORY_ALLOCATION_ERROR);
+//        memoryAllocationError();
 
     base32_word[0] = BASE32_DIGITS[(int) (decimal / BASE32)];
     base32_word[1] = BASE32_DIGITS[(int) (decimal % BASE32)];
@@ -103,7 +101,7 @@ void decimalToBinary(int decimal, char *binary) {
 //    char* binary = (char*)malloc(sizeof(char) * (num_bits + 1));
 //
 //    if (binary == NULL)
-//        exit(MEMORY_ALLOCATION_ERROR);
+//        memoryAllocationError();
 
     /* Calculating the weight of the most significant bit. */
     int bit_weight = (int) pow(2, num_bits - 1);

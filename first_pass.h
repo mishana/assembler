@@ -5,4 +5,6 @@
 #ifndef ASSEMBLER_FIRST_PASS_H
 #define ASSEMBLER_FIRST_PASS_H
 
+void run_first_pass(const char *filename);
+
 #endif //ASSEMBLER_FIRST_PASS_H

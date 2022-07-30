@@ -3,3 +3,8 @@
 //
 
 #include "second_pass.h"
+
+
+void run_second_pass(const char *filename) {
+    // TODO
+}

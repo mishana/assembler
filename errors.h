@@ -6,9 +6,7 @@
 #define ASSEMBLER_ERRORS_H
 
 
-#define MEMORY_ALLOCATION_ERROR -1
-#define BAD_BASE32_DIGIT_ERROR -2
-
-
+void memoryAllocationError();
+void errorWithMsg(const char *msg);
 
 #endif //ASSEMBLER_ERRORS_H

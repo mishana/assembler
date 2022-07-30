@@ -9,28 +9,52 @@
 #include "errors.h"
 
 
+/* A generic linked list node */
+typedef struct node_t {
+    void *data;
+    struct node_t *next;
+} *Node;
+
+struct list_t {
+    Node head;
+    list_eq leq;
+    list_copy lcopy;
+    list_free lfree;
+};
+
 /**
- * `initList` initializes a pList by setting its head pointer to NULL
+ * It creates a list.
  *
- * @param pList a pointer to a List struct
+ * @param leq a function that compares two elements of the list.
+ * @param lcopy a function that takes a pointer to a list element and returns a pointer to a copy of that element.
+ * @param lfree a function that frees the data in the list
  */
-void initList(List *pList) {
-    pList->head = NULL;
+List listCreate(list_eq leq, list_copy lcopy, list_free lfree) {
+    List l = (List) malloc(sizeof(*l));
+    if (!l)
+        memoryAllocationError();
+
+    l->head = NULL;
+    l->leq = leq;
+    l->lcopy = lcopy;
+    l->lfree = lfree;
+
+    return l;
 }
 
 /**
  * Adds a node at the beginning of a Linked List.
  *
  * @param pList a pointer to the List to insert into
- * @param new_data the data to be inserted into the pList
+ * @param new_data the data to be inserted into the l
  * @param copy_data a function that returns a copy of a data item.
  */
-void insertFirst(List *pList, void *new_data, void* (*copy_data)(void*)) {
-    Node* new_node = (Node*) malloc(sizeof(*new_node));
+void listInsertFirst(List pList, void *new_data) {
+    Node new_node = (Node) malloc(sizeof(*new_node));
     if (!new_node)
-        exit(MEMORY_ALLOCATION_ERROR);
+        memoryAllocationError();
 
-    new_node->data = (*copy_data)(new_data);
+    new_node->data = pList->lcopy(new_data);
     new_node->next = pList->head;
 
     pList->head = new_node;
@@ -39,41 +63,55 @@ void insertFirst(List *pList, void *new_data, void* (*copy_data)(void*)) {
 /**
  * Adds a node at the end of a Linked List.
  *
- * @param pList a pointer to the List to insert into
- * @param new_data the data to be inserted into the pList
- * @param copy_data a function that returns a copy of a data item.
+ * @param l a pointer to the List to insert into
+ * @param new_data the data to be inserted into the l
  */
-void insertLast(List *pList, void *new_data, void* (*copy_data)(void*)) {
-    Node* new_node = (Node*) malloc(sizeof(*new_node));
+void listAppend(List l, void *new_data) {
+    Node new_node = (Node) malloc(sizeof(*new_node));
     if (new_node == NULL)
-        exit(MEMORY_ALLOCATION_ERROR);
+        memoryAllocationError();
 
-    new_node->data = (*copy_data)(new_data);
+    new_node->data = l->lcopy(new_data);
     new_node->next = NULL;
 
-    /* If the pList is empty, then the new node is the only node in the pList. */
-    if (!pList->head) {
-        pList->head = new_node;
+    /* If the l is empty, then the new node is the only node in the l. */
+    if (!l->head) {
+        l->head = new_node;
         return;
     }
 
-    /* Iterating through the pList until it reaches the last node. */
-    Node* it;
-    for (it = pList->head; it->next; it = it->next);
+    /* Iterating through the l until it reaches the last node. */
+    Node it;
+    for (it = l->head; it->next; it = it->next);
     it->next = new_node;
+}
+
+/**
+ * It finds the first element in the list that matches the given element.
+ *
+ * @param l The list to search through
+ * @param to_find the value to find in the list
+ */
+void *listFind(List l, void *to_find) {
+    for (Node it = l->head; it; it = it->next) {
+        /* Comparing the data in the node to the data we are looking for. */
+        if (l->leq(it->data, to_find) == 0)
+            return it->data;
+    }
+    return NULL;
 }
 
 /**
  * It returns the length of the list.
  *
- * @param list a List struct
+ * @param l a pointer to a list
  */
-int length(List list) {
-    if (!list.head)
+int length(List l) {
+    if (!l->head)
         return 0;
 
     int count = 1;
-    Node *ptr = list.head;
+    Node ptr = l->head;
     while (ptr->next) {
         ptr = ptr->next;
         count++;
@@ -84,22 +122,19 @@ int length(List list) {
 /**
  * It destroys the list - frees the memory.
  *
- * @param plist A pointer to a List to destroy.
- * @param destroy_data a function that destroys a data item.
+ * @param l A pointer to a List to destroy.
  */
-void destroyList(List *plist, void (*destroy_data)(void *)) {
+void listDestroy(List l) {
     /* If the list is empty, there's nothing to destroy. */
-    if (!plist->head)
+    if (!l->head)
         return;
 
     /* Freeing the memory allocated for the nodes in the list. */
-    Node *ptr1, *ptr2;
-    ptr1 = plist->head;
-    while (ptr1) {
-        ptr2 = ptr1;
-        ptr1 = ptr1->next;
-        (*destroy_data)(ptr2->data);
-        free(ptr2);
+    while (l->head) {
+        Node to_delete = l->head;
+        l->head = l->head->next;
+        l->lfree(to_delete->data);
+        free(to_delete);
     }
-    plist->head = NULL;
+    free(l);
 }

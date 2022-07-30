@@ -3,3 +3,8 @@
 //
 
 #include "first_pass.h"
+
+
+void run_first_pass(const char *filename) {
+    // TODO
+}

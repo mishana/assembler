@@ -5,6 +5,9 @@
 #ifndef ASSEMBLER_BASE_CONVERSION_H
 #define ASSEMBLER_BASE_CONVERSION_H
 
+#define BASE32_WORD_SIZE 2
+#define BINARY_WORD_SIZE 10
+
 int base32WordToDecimal(const char *base32_word);
 
 void decimalToBase32Word(int decimal, char *base32_word);

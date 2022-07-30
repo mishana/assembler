@@ -5,25 +5,25 @@
 #ifndef ASSEMBLER_LINKEDLIST_H
 #define ASSEMBLER_LINKEDLIST_H
 
-/* A linked list node */
-typedef struct node {
-    // Any data type can be stored in this node
-    void *data;
-    struct node *next;
-} Node;
 
-typedef struct list {
-    Node *head;
-} List;
+typedef int (*list_eq)(const void *a, const void *b);
 
-void initList(List *pList);
+typedef void *(*list_copy)(const void *);
 
-void insertFirst(List *pList, void *new_data, void *(*copy_data)(void *));
+typedef void (*list_free)(void *);
 
-void insertLast(List *pList, void *new_data, void *(*copy_data)(void *));
+typedef struct list_t *List;
 
-int length(List list);
+List listCreate(list_eq leq, list_copy lcopy, list_free lfree);
 
-void destroyList(List *plist, void (*destroy_data)(void *));
+void listInsertFirst(List pList, void *new_data);
+
+void listAppend(List l, void *new_data);
+
+void *listFind(List l, void *to_find);
+
+int length(List l);
+
+void listDestroy(List l);
 
 #endif //ASSEMBLER_LINKEDLIST_H
