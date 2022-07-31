@@ -6,12 +6,15 @@
 #define ASSEMBLER_LINKEDLIST_H
 
 
+#include <stdbool.h>
+
 typedef int (*list_eq)(const void *a, const void *b);
 
 typedef void *(*list_copy)(const void *);
 
 typedef void (*list_free)(void *);
 
+typedef struct node_t *Node;
 typedef struct list_t *List;
 
 /** possible return values */
@@ -30,5 +33,11 @@ ListResult listFindAndCopy(List l, void *to_find, void **found);
 int length(List l);
 
 void listDestroy(List l);
+
+const void *nodeGetData(Node n);
+
+Node listHead(List l);
+
+Node nodeGetNext(Node n);
 
 #endif //ASSEMBLER_LINKEDLIST_H

@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include "linkedlist.h"
 
+#define WHITESPACE_DELIM "\t\n "
+
 
 bool strEndsWith(const char *str, const char *suffix);
 

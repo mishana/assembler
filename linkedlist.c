@@ -10,16 +10,20 @@
 
 
 /* A generic linked list node */
-typedef struct node_t {
+struct node_t {
     void *data;
     struct node_t *next;
-} *Node;
+};
 
 struct list_t {
     Node head;
     list_eq leq;
     list_copy lcopy;
     list_free lfree;
+};
+
+struct iterator_t {
+    Node current;
 };
 
 /**
@@ -152,3 +156,31 @@ void listDestroy(List l) {
     }
     free(l);
 }
+
+/**
+ * It returns a const pointer to the data of the node.
+ *
+ * @param n The node to get the data from.
+ */
+const void *nodeGetData(Node n) {
+    return n->data;
+}
+
+/**
+ * It returns the first node in the list.
+ *
+ * @param l a pointer to a linked list
+ */
+Node listHead(List l) {
+    return l->head;
+}
+
+/**
+ *
+ *
+ * @param n The node to get the next node of.
+ */
+Node nodeGetNext(Node n) {
+    return n->next;
+}
+

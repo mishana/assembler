@@ -78,10 +78,11 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
             size_t first_word_end_idx = strFindNextWhitespace(line, first_word_start_idx);
             char *first_word = strndup(line + first_word_start_idx, first_word_end_idx - first_word_start_idx);
 
-            Macro m = macroCreate(first_word, NULL);
+            /* It's creating a dummy macro with the name of the first word in the line. */
+            Macro dummy = macroCreate(first_word, NULL);
             Macro found_macro;
-            ListResult res = listFindAndCopy(macros, m, (void **) &found_macro);
-            macroDestroy(m);
+            ListResult res = listFindAndCopy(macros, dummy, (void **) &found_macro);
+            macroDestroy(dummy);
 
             if (res == LIST_FOUND) {
                 fputs(macroGetBody(found_macro), dst_file);

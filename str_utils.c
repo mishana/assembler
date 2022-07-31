@@ -108,12 +108,75 @@ char *strndup(const char *s, size_t n) {
     return p;
 }
 
+/**
+ * Replace all occurrences of old_substr in s with new_substr.
+ * You must free the result if result is non-NULL.
+ *
+ * @param s The string to search and replace in.
+ * @param old_substr The substring you want to replace.
+ * @param new_substr The string to replace old_substr with.
+ */
 char *strReplace(const char *s, const char *old_substr, const char *new_substr) {
-    // TODO
-    return NULL;
+    char *result; // the return string
+    char *ins;    // the next insert point
+    char *tmp;    // varies
+    size_t len_rep;  // length of old_substr (the string to remove)
+    size_t len_with; // length of with (the string to replace old_substr with)
+    size_t len_front; // distance between old_substr and end of last old_substr
+    int count;    // number of replacements
+
+    // sanity checks and initialization
+    if (!s || !old_substr)
+        return NULL;
+    len_rep = strlen(old_substr);
+    if (len_rep == 0)
+        return NULL; // empty old_substr causes infinite loop during count
+    if (!new_substr)
+        new_substr = "";
+    len_with = strlen(new_substr);
+
+    // count the number of replacements needed
+    tmp = strstr(s, old_substr);
+    for (count = 0; tmp; ++count) {
+        ins = tmp + len_rep;
+        tmp = strstr(ins, old_substr);
+    }
+
+    tmp = result = malloc(strlen(s) + (len_with - len_rep) * count + 1);
+
+    if (!result)
+        return NULL;
+
+    // first time through the loop, all the variable are set correctly
+    // from here on,
+    //    tmp points to the end of the result string
+    //    ins points to the next occurrence of old_substr in s
+    //    s points to the remainder of s after "end of old_substr"
+    while (count--) {
+        ins = strstr(s, old_substr);
+        len_front = ins - s;
+        tmp = strncpy(tmp, s, len_front) + len_front;
+        tmp = strcpy(tmp, new_substr) + len_with;
+        s += len_front + len_rep; // move to next "end of old_substr"
+    }
+    strcpy(tmp, s);
+    return result;
 }
 
+/**
+ * It splits a string by delimiters into a list of strings.
+ *
+ * @param s The string to split.
+ * @param delim a string of delimiters.
+ */
 List strSplit(const char *s, const char *delim) {
-    // TODO
-    return NULL;
+    List l = listCreate((list_eq) strcmp, (list_copy) strdup, free);
+    char *tmp = strdup(s);
+
+    for (char *token = strtok(tmp, delim); token; token = strtok(NULL, delim)) {
+        listAppend(l, token);
+    }
+
+    free(tmp);
+    return l;
 }
