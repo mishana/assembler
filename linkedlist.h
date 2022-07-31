@@ -14,13 +14,18 @@ typedef void (*list_free)(void *);
 
 typedef struct list_t *List;
 
+/** possible return values */
+typedef enum {
+    LIST_SUCCESS, LIST_NULL_ARGUMENT, LIST_NOT_FOUND, LIST_FOUND
+} ListResult;
+
 List listCreate(list_eq leq, list_copy lcopy, list_free lfree);
 
-void listInsertFirst(List pList, void *new_data);
+ListResult listInsertFirst(List l, void *new_data);
 
-void listAppend(List l, void *new_data);
+ListResult listAppend(List l, void *new_data);
 
-void *listFind(List l, void *to_find);
+ListResult listFindAndCopy(List l, void *to_find, void **found);
 
 int length(List l);
 

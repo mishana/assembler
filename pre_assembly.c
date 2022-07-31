@@ -76,15 +76,20 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
             /* It's getting the first word in the line. */
             size_t first_word_start_idx = strFindNextNonWhitespace(line, 0);
             size_t first_word_end_idx = strFindNextWhitespace(line, first_word_start_idx);
-            // mark the end of the first word
             char *first_word = strndup(line + first_word_start_idx, first_word_end_idx - first_word_start_idx);
 
             Macro m = macroCreate(first_word, NULL);
-            Macro predefined_macro = listFind(macros, m);
-            if (predefined_macro != NULL)
-                fputs(macroGetBody(predefined_macro), dst_file);
-            else
+            Macro found_macro;
+            ListResult res = listFindAndCopy(macros, m, (void **) &found_macro);
+            macroDestroy(m);
+
+            if (res == LIST_FOUND) {
+                fputs(macroGetBody(found_macro), dst_file);
+                macroDestroy(found_macro);
+            }
+            else {
                 fputs(line, dst_file);
+            }
         }
     }
     listDestroy(macros);

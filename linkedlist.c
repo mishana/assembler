@@ -45,19 +45,24 @@ List listCreate(list_eq leq, list_copy lcopy, list_free lfree) {
 /**
  * Adds a node at the beginning of a Linked List.
  *
- * @param pList a pointer to the List to insert into
+ * @param l a pointer to the List to insert into
  * @param new_data the data to be inserted into the l
  * @param copy_data a function that returns a copy of a data item.
  */
-void listInsertFirst(List pList, void *new_data) {
+ListResult listInsertFirst(List l, void *new_data) {
+    if (!l || !new_data)
+        return LIST_NULL_ARGUMENT;
+
     Node new_node = (Node) malloc(sizeof(*new_node));
     if (!new_node)
+        /* It's a function that prints an error message and exits the program. */
         memoryAllocationError();
 
-    new_node->data = pList->lcopy(new_data);
-    new_node->next = pList->head;
+    new_node->data = l->lcopy(new_data);
+    new_node->next = l->head;
 
-    pList->head = new_node;
+    l->head = new_node;
+    return LIST_SUCCESS;
 }
 
 /**
@@ -66,7 +71,10 @@ void listInsertFirst(List pList, void *new_data) {
  * @param l a pointer to the List to insert into
  * @param new_data the data to be inserted into the l
  */
-void listAppend(List l, void *new_data) {
+ListResult listAppend(List l, void *new_data) {
+    if (!l || !new_data)
+        return LIST_NULL_ARGUMENT;
+
     Node new_node = (Node) malloc(sizeof(*new_node));
     if (new_node == NULL)
         memoryAllocationError();
@@ -77,13 +85,13 @@ void listAppend(List l, void *new_data) {
     /* If the l is empty, then the new node is the only node in the l. */
     if (!l->head) {
         l->head = new_node;
-        return;
+    } else {
+        /* Iterating through the l until it reaches the last node. */
+        Node it;
+        for (it = l->head; it->next; it = it->next);
+        it->next = new_node;
     }
-
-    /* Iterating through the l until it reaches the last node. */
-    Node it;
-    for (it = l->head; it->next; it = it->next);
-    it->next = new_node;
+    return LIST_SUCCESS;
 }
 
 /**
@@ -91,14 +99,20 @@ void listAppend(List l, void *new_data) {
  *
  * @param l The list to search through
  * @param to_find the value to find in the list
+ * @param found a pointer to a copy of the found value
  */
-void *listFind(List l, void *to_find) {
+ListResult listFindAndCopy(List l, void *to_find, void **found) {
+    if (!l || !to_find)
+        return LIST_NULL_ARGUMENT;
+
     for (Node it = l->head; it; it = it->next) {
         /* Comparing the data in the node to the data we are looking for. */
-        if (l->leq(it->data, to_find) == 0)
-            return it->data;
+        if (l->leq(it->data, to_find) == 0) {
+            *found = l->lcopy(it->data);
+            return LIST_FOUND;
+        }
     }
-    return NULL;
+    return LIST_NOT_FOUND;
 }
 
 /**

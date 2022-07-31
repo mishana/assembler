@@ -34,6 +34,8 @@ Macro macroCreate(const char *name, const char *body) {
         m->body = strdup(body);
         if (!m->body)
             memoryAllocationError();
+    } else {
+        m->body = NULL;
     }
 
     return m;
@@ -64,8 +66,10 @@ Macro macroCopy(Macro m) {
  * @param m The macro to destroy.
  */
 void macroDestroy(Macro m) {
-    free((char *) m->name);
-    free((char *) m->body);
+    if (m->name)
+        free((char *) m->name);
+    if (m->body)
+        free((char *) m->body);
     free(m);
 }
 
