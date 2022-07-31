@@ -29,7 +29,10 @@ int base32DigitToDecimal(char base32_digit) {
         if (BASE32_DIGITS[i] == base32_digit)
             return i;
     }
+
+    /* A function that prints an error message and exits the program. */
     errorWithMsg("Bad Base32 Digit ERROR!");
+    return -1; // just to avoid compiler warnings
 }
 
 /**
@@ -70,12 +73,12 @@ void decimalToBase32Word(int decimal, char *base32_word) {
  * @param binary A string of 1's and 0's
  */
 int binaryToDecimal(const char *binary) {
-    int binary_len = (int) strlen(binary);
+    size_t binary_len = strlen(binary);
     int decimal = 0;
 
     /* Calculating the weight of the most significant bit. */
     int bit_weight = (int) pow(2, binary_len - 1);
-    for (int i = 0; i < binary_len; ++i) {
+    for (size_t i = 0; i < binary_len; ++i) {
         assert(binary[i] == '0' || binary[i] == '1');
 
         /* It converts the character '0' or '1' to the integer 0 or 1. */

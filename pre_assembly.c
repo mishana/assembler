@@ -21,7 +21,7 @@
 
 
 void concat_filename_and_suffix(char *filename_with_suffix, const char *filename, const char *suffix) {
-    int filename_with_suffix_len = (int) strlen(filename) + (int) strlen(suffix);
+    size_t filename_with_suffix_len = strlen(filename) + strlen(suffix);
     /* Concatenating the filename with the suffix. */
     snprintf(filename_with_suffix, filename_with_suffix_len + 1, "%s%s", filename, suffix);
 }
@@ -35,27 +35,21 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
 
     char line[MAX_LINE_LEN];
     while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
-        if (startsWith(line, START_MACRO, true)) { // macro statement
+        if (strStartsWith(line, START_MACRO, true)) { // macro statement
             is_macro = true;
 
             // start of macro definition
-            int macro_definition_idx = findNextNonWhitespace(line, 0);
+            size_t macro_definition_idx = strFindNextNonWhitespace(line, 0);
             // start of macro name
-            int macro_name_start_idx = findNextNonWhitespace(line, macro_definition_idx + strlen(START_MACRO));
+            size_t macro_name_start_idx = strFindNextNonWhitespace(line, macro_definition_idx + strlen(START_MACRO));
             // end of macro name
-            int macro_name_end_idx = findNextWhitespace(line, macro_name_start_idx);
+            size_t macro_name_end_idx = strFindNextWhitespace(line, macro_name_start_idx);
 
             macro_name = strndup(line + macro_name_start_idx, macro_name_end_idx - macro_name_start_idx);
             if (!macro_name)
                 memoryAllocationError();
 
-            // TODO: init macro body
-//            macro_body = strndup(line + macro_name_start_idx, macro_name_end_idx - macro_name_start_idx);
-//            if (!macro_body)
-//                memoryAllocationError();
-
-
-        } else if (startsWith(line, END_MACRO, true)) { // endmacro statement
+        } else if (strStartsWith(line, END_MACRO, true)) { // endmacro statement
             Macro m = macroCreate(macro_name, macro_body);
             listAppend(macros, m);
             macroDestroy(m);
@@ -64,8 +58,7 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
             free(macro_name);
             free(macro_body);
 
-        } else if (is_macro) {
-            // TODO: append to macro body
+        } else if (is_macro) { // inside macro - append to macro body
             char *tmp = macro_body;
 
             if (!macro_body) {
@@ -81,8 +74,8 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
 
         } else { // outside macro definition, check if referencing macro that needs unfolding
             /* It's getting the first word in the line. */
-            int first_word_start_idx = findNextNonWhitespace(line, 0);
-            int first_word_end_idx = findNextWhitespace(line, first_word_start_idx);
+            size_t first_word_start_idx = strFindNextNonWhitespace(line, 0);
+            size_t first_word_end_idx = strFindNextWhitespace(line, first_word_start_idx);
             // mark the end of the first word
             char *first_word = strndup(line + first_word_start_idx, first_word_end_idx - first_word_start_idx);
 

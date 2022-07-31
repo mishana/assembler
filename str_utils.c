@@ -16,9 +16,9 @@
  * @param str The string to check
  * @param suffix The suffix string to be checked.
  */
-bool endsWith(const char *str, const char *suffix) {
-    int str_len = (int) strlen(str);
-    int suffix_len = (int) strlen(suffix);
+bool strEndsWith(const char *str, const char *suffix) {
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
 
     if (str_len < suffix_len)
         return false;
@@ -33,19 +33,19 @@ bool endsWith(const char *str, const char *suffix) {
  * @param prefix The prefix to check for.
  * @param ignore_leading_whitespace If true, the function will ignore leading whitespace in the string.
  */
-bool startsWith(const char *str, const char *prefix, bool ignore_leading_whitespace) {
-    int str_len = (int) strlen(str);
-    int prefix_len = (int) strlen(prefix);
+bool strStartsWith(const char *str, const char *prefix, bool ignore_leading_whitespace) {
+    size_t str_len = strlen(str);
+    size_t prefix_len = strlen(prefix);
 
     if (str_len < prefix_len)
         return false;
 
     int start_substring_from = 0;
     if (ignore_leading_whitespace) {
-        start_substring_from = findNextNonWhitespace(str, 0);
+        start_substring_from = strFindNextNonWhitespace(str, 0);
     }
 
-    for (int i = 0; i < prefix_len; ++i) {
+    for (size_t i = 0; i < prefix_len; ++i) {
         if (str[start_substring_from + i] != prefix[i])
             return false;
     }
@@ -58,7 +58,7 @@ bool startsWith(const char *str, const char *prefix, bool ignore_leading_whitesp
  * @param str The string to search in
  * @param from_idx The index to start searching from.
  */
-int findNextWhitespace(const char *str, int from_idx) {
+size_t strFindNextWhitespace(const char *str, size_t from_idx) {
     while (from_idx < strlen(str) && !isspace(str[from_idx])) {
         from_idx++;
     }
@@ -75,7 +75,7 @@ int findNextWhitespace(const char *str, int from_idx) {
  * @param str The string to search in
  * @param from_idx The index to start searching from.
  */
-int findNextNonWhitespace(const char *str, int from_idx) {
+size_t strFindNextNonWhitespace(const char *str, size_t from_idx) {
     while (from_idx < strlen(str) && isspace(str[from_idx])) {
         from_idx++;
     }
@@ -98,7 +98,7 @@ char *strndup(const char *s, size_t n) {
 
     for (n1 = 0; n1 < n && s[n1] != '\0'; n1++)
         continue;
-    p = (char *)malloc(n + 1);
+    p = (char *) malloc(n + 1);
     if (p != NULL) {
         memcpy(p, s, n1);
         p[n1] = '\0';
@@ -106,4 +106,14 @@ char *strndup(const char *s, size_t n) {
         memoryAllocationError();
     }
     return p;
+}
+
+char *strReplace(const char *s, const char *old_substr, const char *new_substr) {
+    // TODO
+    return NULL;
+}
+
+List strSplit(const char *s, const char *delim) {
+    // TODO
+    return NULL;
 }
