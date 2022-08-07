@@ -30,7 +30,7 @@ ListResult listAppend(List l, void *new_data);
 
 ListResult listFindAndCopy(List l, void *to_find, void **found);
 
-int length(List l);
+int listLength(List l);
 
 void listDestroy(List l);
 

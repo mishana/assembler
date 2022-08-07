@@ -12,12 +12,14 @@
 #include "str_utils.h"
 #include "errors.h"
 #include "macro.h"
+#include "parser.h"
+
 
 #define SOURCE_FILE_SUFFIX ".as"
 #define AFTER_MACRO_SUFFIX ".am"
 
-#define MAX_FILENAME_LEN 1000
-#define MAX_LINE_LEN 80 + 1
+#define MAX_FILENAME_LEN 2048
+#define MAX_LINE_LEN 2048
 
 
 void concat_filename_and_suffix(char *filename_with_suffix, const char *filename, const char *suffix) {
@@ -35,6 +37,7 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
 
     char line[MAX_LINE_LEN];
     while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
+        Statement s = parse(line);
         if (strStartsWith(line, START_MACRO, true)) { // macro statement
             is_macro = true;
 

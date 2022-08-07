@@ -22,10 +22,6 @@ struct list_t {
     list_free lfree;
 };
 
-struct iterator_t {
-    Node current;
-};
-
 /**
  * It creates a list.
  *
@@ -120,11 +116,11 @@ ListResult listFindAndCopy(List l, void *to_find, void **found) {
 }
 
 /**
- * It returns the length of the list.
+ * It returns the listLength of the list.
  *
  * @param l a pointer to a list
  */
-int length(List l) {
+int listLength(List l) {
     if (!l->head)
         return 0;
 

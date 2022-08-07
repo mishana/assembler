@@ -3,6 +3,7 @@
 //
 
 #include "first_pass.h"
+#include "parser.h"
 
 
 void run_first_pass(const char *filename) {

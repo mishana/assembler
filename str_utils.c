@@ -120,8 +120,8 @@ char *strReplace(const char *s, const char *old_substr, const char *new_substr) 
     char *result; // the return string
     char *ins;    // the next insert point
     char *tmp;    // varies
-    size_t len_rep;  // length of old_substr (the string to remove)
-    size_t len_with; // length of with (the string to replace old_substr with)
+    size_t len_rep;  // listLength of old_substr (the string to remove)
+    size_t len_with; // listLength of with (the string to replace old_substr with)
     size_t len_front; // distance between old_substr and end of last old_substr
     int count;    // number of replacements
 

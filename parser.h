@@ -11,7 +11,7 @@
 
 
 typedef enum {
-    EMPTY, COMMENT, DIRECTIVE, INSTRUCTION, MACRO_START, MACRO_END, MACRO_REF
+    DIRECTIVE, INSTRUCTION, MACRO_START, MACRO_END, MACRO_REF
 } StatementType;
 
 typedef struct parsed_statement_t *ParsedStatement;
