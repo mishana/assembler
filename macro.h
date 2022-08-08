@@ -6,9 +6,6 @@
 #define ASSEMBLER_MACRO_H
 
 
-#define START_MACRO "macro"
-#define END_MACRO "endmacro"
-
 typedef struct macro_t *Macro;
 
 Macro macroCreate(const char *name, const char *body);

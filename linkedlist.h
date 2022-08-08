@@ -24,11 +24,15 @@ typedef enum {
 
 List listCreate(list_eq leq, list_copy lcopy, list_free lfree);
 
+List listCopy(List l);
+
+List listCopyFromNode(List l, Node n);
+
 ListResult listInsertFirst(List l, void *new_data);
 
 ListResult listAppend(List l, void *new_data);
 
-ListResult listFindAndCopy(List l, void *to_find, void **found);
+ListResult listFind(List l, void *to_find, void **found);
 
 int listLength(List l);
 

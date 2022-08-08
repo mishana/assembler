@@ -42,6 +42,46 @@ List listCreate(list_eq leq, list_copy lcopy, list_free lfree) {
     return l;
 }
 
+List listCopy(List l) {
+    if (!l)
+        return NULL;
+
+    List lc = (List) malloc(sizeof(*lc));
+    if (!lc)
+        memoryAllocationError();
+
+    lc->head = NULL;
+    lc->lcopy = l->lcopy;
+    lc->lfree = l->lfree;
+    lc->leq = l->leq;
+
+    for (Node it = l->head; it; it = it->next) {
+        listAppend(lc, it->data);
+    }
+
+    return lc;
+}
+
+List listCopyFromNode(List l, Node n) {
+    if (!l)
+        return NULL;
+
+    List lc = (List) malloc(sizeof(*lc));
+    if (!lc)
+        memoryAllocationError();
+
+    lc->head = NULL;
+    lc->lcopy = l->lcopy;
+    lc->lfree = l->lfree;
+    lc->leq = l->leq;
+
+    for (Node it = n; it; it = it->next) {
+        listAppend(lc, it->data);
+    }
+
+    return lc;
+}
+
 /**
  * Adds a node at the beginning of a Linked List.
  *
@@ -101,7 +141,7 @@ ListResult listAppend(List l, void *new_data) {
  * @param to_find the value to find in the list
  * @param found a pointer to a copy of the found value
  */
-ListResult listFindAndCopy(List l, void *to_find, void **found) {
+ListResult listFind(List l, void *to_find, void **found) {
     if (!l || !to_find)
         return LIST_NULL_ARGUMENT;
 

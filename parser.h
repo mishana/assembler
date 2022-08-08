@@ -11,14 +11,29 @@
 
 
 typedef enum {
-    DIRECTIVE, INSTRUCTION, MACRO_START, MACRO_END, MACRO_REF
+    DIRECTIVE, INSTRUCTION, MACRO_START, MACRO_END, OTHER
 } StatementType;
-
-typedef struct parsed_statement_t *ParsedStatement;
 
 typedef struct statement_t *Statement;
 
-// TODO implement init, destroy, parse...
 Statement parse(const char *line);
+
+Statement
+statementCreate(StatementType type, const char *raw_text, const char *label, const char *mnemonic, List operands,
+                List tokens);
+
+void statementDestroy(Statement s);
+
+StatementType statementGetType(Statement s);
+
+const char *statementGetRawText(Statement s);
+
+const char *statementGetLabel(Statement s);
+
+const char *statementGetMnemonic(Statement s);
+
+const List statementGetOperands(Statement s);
+
+const List statementGetTokens(Statement s);
 
 #endif //ASSEMBLER_PARSER_H

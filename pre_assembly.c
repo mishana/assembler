@@ -9,7 +9,6 @@
 
 #include "pre_assembly.h"
 #include "linkedlist.h"
-#include "str_utils.h"
 #include "errors.h"
 #include "macro.h"
 #include "parser.h"
@@ -32,33 +31,27 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
     List macros = listCreate((list_eq) macroCmp, (list_copy) macroCopy, (list_free) macroDestroy);
 
     bool is_macro = false;
-    char *macro_name;
+    const char *macro_name;
     char *macro_body = NULL;
 
     char line[MAX_LINE_LEN];
     while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
+        /* It's parsing the line. */
         Statement s = parse(line);
-        if (strStartsWith(line, START_MACRO, true)) { // macro statement
+        if (!s) { // comment or empty line
+            continue;
+        }
+
+        if (statementGetType(s) == MACRO_START) {
             is_macro = true;
+            macro_name = nodeGetData(listHead(statementGetOperands(s)));
 
-            // start of macro definition
-            size_t macro_definition_idx = strFindNextNonWhitespace(line, 0);
-            // start of macro name
-            size_t macro_name_start_idx = strFindNextNonWhitespace(line, macro_definition_idx + strlen(START_MACRO));
-            // end of macro name
-            size_t macro_name_end_idx = strFindNextWhitespace(line, macro_name_start_idx);
-
-            macro_name = strndup(line + macro_name_start_idx, macro_name_end_idx - macro_name_start_idx);
-            if (!macro_name)
-                memoryAllocationError();
-
-        } else if (strStartsWith(line, END_MACRO, true)) { // endmacro statement
+        } else if (statementGetType(s) == MACRO_END) {
             Macro m = macroCreate(macro_name, macro_body);
             listAppend(macros, m);
             macroDestroy(m);
 
             is_macro = false;
-            free(macro_name);
             free(macro_body);
 
         } else if (is_macro) { // inside macro - append to macro body
@@ -76,15 +69,12 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
             }
 
         } else { // outside macro definition, check if referencing macro that needs unfolding
-            /* It's getting the first word in the line. */
-            size_t first_word_start_idx = strFindNextNonWhitespace(line, 0);
-            size_t first_word_end_idx = strFindNextWhitespace(line, first_word_start_idx);
-            char *first_word = strndup(line + first_word_start_idx, first_word_end_idx - first_word_start_idx);
+            const char *first_word = nodeGetData(listHead(statementGetTokens(s)));
 
             /* It's creating a dummy macro with the name of the first word in the line. */
             Macro dummy = macroCreate(first_word, NULL);
             Macro found_macro;
-            ListResult res = listFindAndCopy(macros, dummy, (void **) &found_macro);
+            ListResult res = listFind(macros, dummy, (void **) &found_macro);
             macroDestroy(dummy);
 
             if (res == LIST_FOUND) {
@@ -95,6 +85,7 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
                 fputs(line, dst_file);
             }
         }
+        statementDestroy(s);
     }
     listDestroy(macros);
 }
