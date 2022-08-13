@@ -7,6 +7,7 @@
 #include "errors.h"
 #include <stdlib.h>
 #include <string.h>
+#include "symtab.h"
 
 #define WHITESPACE_DELIM " \t\n "
 #define OPERANDS_DELIM ","
@@ -36,25 +37,11 @@ static bool isLabel(const char *s) {
     return strEndsWith(s, LABEL_SUFFUX);
 }
 
-static bool isDirective(const char *s) {
-    // TODO: check validity
-    // TODO
-    return false;
-}
-
-static bool isInstruction(const char *s) {
-    // TODO: check validity
-    // TODO
-    return false;
-}
-
 static bool isMacroStart(const char *s) {
-    // TODO: check validity
     return strcmp(s, START_MACRO_STR) == 0;
 }
 
 static bool isMacroEnd(const char *s) {
-    // TODO: check validity
     return strcmp(s, END_MACRO_STR) == 0;
 }
 
@@ -68,6 +55,7 @@ Statement parse(const char *line) {
         return NULL;
     }
 
+    // TODO: check validity of operands delimiters, amount and placement
     const char *line_replaced = strReplace(line, OPERANDS_DELIM, WHITESPACE_DELIM);
     if (!line_replaced) {
         memoryAllocationError();
@@ -83,22 +71,26 @@ Statement parse(const char *line) {
 
     free((char *) line_replaced);
 
-    Node token_node = listHead(tokens);
-    const char *token = nodeGetData(token_node);
+//    Node token_node = listHead(tokens);
+//    const char *token = nodeGetData(token_node);
+    int token_index = 0;
+    const char *token = listGetDataAt(tokens, token_index);
 
     const char *label = NULL;
     if (isLabel(token)) {
         label = token;
-
-        token_node = nodeGetNext(token_node);
-        // TODO: check if not NULL
-        token = nodeGetData(token_node);
+        // TODO: check label validity
+//        token_node = nodeGetNext(token_node);
+//        // TODO: check if not NULL
+//        token = nodeGetData(token_node);
+        token_index++;
+        token = listGetDataAt(tokens, token_index);
     }
     StatementType type;
-    // TODO: continue, if macro start, macro end, isDirective, isInstruction, check validity...
     if (isMacroStart(token)) {
         type = MACRO_START;
-    } else if (isMacroEnd(token)) {
+        // TODO: check validity of macro name?
+    } else if (isMacroEnd(token) && listLength(tokens) == 1) {
         type = MACRO_END;
     } else if (isDirective(token)) {
         type = DIRECTIVE;
@@ -111,8 +103,8 @@ Statement parse(const char *line) {
 
     const char *mnemonic = token;
 
-    token_node = nodeGetNext(token_node);
-    List operands = listCopyFromNode(tokens, token_node);
+    token_index++;
+    List operands = listCopyFromIndex(tokens, token_index);
 
     Statement s = statementCreate(type, line, label, mnemonic, operands, tokens);
     listDestroy(tokens);

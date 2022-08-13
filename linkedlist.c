@@ -42,27 +42,22 @@ List listCreate(list_eq leq, list_copy lcopy, list_free lfree) {
     return l;
 }
 
+/**
+ * It copies the list l and returns the copy.
+ *
+ * @param l The list to copy.
+ */
 List listCopy(List l) {
-    if (!l)
-        return NULL;
-
-    List lc = (List) malloc(sizeof(*lc));
-    if (!lc)
-        memoryAllocationError();
-
-    lc->head = NULL;
-    lc->lcopy = l->lcopy;
-    lc->lfree = l->lfree;
-    lc->leq = l->leq;
-
-    for (Node it = l->head; it; it = it->next) {
-        listAppend(lc, it->data);
-    }
-
-    return lc;
+    return listCopyFromIndex(l, 0);
 }
 
-List listCopyFromNode(List l, Node n) {
+/**
+ * It copies the list l and returns the copy from the index.
+ *
+ * @param l The list to copy.
+ * @param index The index of the element to copy.
+ */
+List listCopyFromIndex(List l, int index) {
     if (!l)
         return NULL;
 
@@ -75,8 +70,12 @@ List listCopyFromNode(List l, Node n) {
     lc->lfree = l->lfree;
     lc->leq = l->leq;
 
-    for (Node it = n; it; it = it->next) {
-        listAppend(lc, it->data);
+    int i = 0;
+    for (Node it = l->head; it; it = it->next) {
+        if (i >= index) {
+            listAppend(lc, it->data);
+        }
+        i++;
     }
 
     return lc;
@@ -191,6 +190,24 @@ void listDestroy(List l) {
         free(to_delete);
     }
     free(l);
+}
+
+/**
+ * It returns the data at the given index.
+ *
+ * @param l The list to get the data from.
+ * @param index the index of the element you want to get the data of
+ */
+const void *listGetDataAt(List l, int index) {
+    if (!l)
+        return NULL;
+    if (index < 0 || index >= listLength(l))
+        return NULL;
+    Node it = l->head;
+    for (int i = 0; i < index; i++) {
+        it = it->next;
+    }
+    return it->data;
 }
 
 /**

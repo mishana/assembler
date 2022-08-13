@@ -180,3 +180,20 @@ List strSplit(const char *s, const char *delim) {
     free(tmp);
     return l;
 }
+
+/**
+ * It concatenates two strings.
+ *
+ * @param s1 The first string to be concatenated.
+ * @param s2 The string to be appended to s1.
+ */
+char *strConcat(const char *s1, const char *s2) {
+    char *result = malloc(strlen(s1) + strlen(s2) + 1);
+    if (result) {
+        strcpy(result, s1);
+        strcat(result, s2);
+    } else {
+        memoryAllocationError();
+    }
+    return result;
+}

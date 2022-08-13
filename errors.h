@@ -6,7 +6,8 @@
 #define ASSEMBLER_ERRORS_H
 
 
-void memoryAllocationError();
+void memoryAllocationError(void);
+void fileNotFoundError(const char *filename);
 void errorWithMsg(const char *msg);
 
 #endif //ASSEMBLER_ERRORS_H

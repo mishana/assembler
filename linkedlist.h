@@ -26,7 +26,7 @@ List listCreate(list_eq leq, list_copy lcopy, list_free lfree);
 
 List listCopy(List l);
 
-List listCopyFromNode(List l, Node n);
+List listCopyFromIndex(List l, int index);
 
 ListResult listInsertFirst(List l, void *new_data);
 
@@ -37,6 +37,8 @@ ListResult listFind(List l, void *to_find, void **found);
 int listLength(List l);
 
 void listDestroy(List l);
+
+const void *listGetDataAt(List l, int index);
 
 const void *nodeGetData(Node n);
 

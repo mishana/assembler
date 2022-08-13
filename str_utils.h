@@ -24,5 +24,7 @@ char *strReplace(const char *s, const char *old_substr, const char *new_substr);
 
 List strSplit(const char *s, const char *delim);
 
+char *strConcat(const char *s1, const char *s2);
+
 
 #endif //ASSEMBLER_STR_UTILS_H
