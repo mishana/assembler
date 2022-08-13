@@ -71,8 +71,6 @@ Statement parse(const char *line) {
 
     free((char *) line_replaced);
 
-//    Node token_node = listHead(tokens);
-//    const char *token = nodeGetData(token_node);
     int token_index = 0;
     const char *token = listGetDataAt(tokens, token_index);
 
@@ -80,9 +78,6 @@ Statement parse(const char *line) {
     if (isLabel(token)) {
         label = token;
         // TODO: check label validity
-//        token_node = nodeGetNext(token_node);
-//        // TODO: check if not NULL
-//        token = nodeGetData(token_node);
         token_index++;
         token = listGetDataAt(tokens, token_index);
     }

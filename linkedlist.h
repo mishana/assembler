@@ -14,7 +14,6 @@ typedef void *(*list_copy)(const void *);
 
 typedef void (*list_free)(void *);
 
-typedef struct node_t *Node;
 typedef struct list_t *List;
 
 /** possible return values */
@@ -39,11 +38,5 @@ int listLength(List l);
 void listDestroy(List l);
 
 const void *listGetDataAt(List l, int index);
-
-const void *nodeGetData(Node n);
-
-Node listHead(List l);
-
-Node nodeGetNext(Node n);
 
 #endif //ASSEMBLER_LINKEDLIST_H

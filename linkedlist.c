@@ -10,10 +10,10 @@
 
 
 /* A generic linked list node */
-struct node_t {
+typedef struct node_t {
     void *data;
     struct node_t *next;
-};
+} *Node;
 
 struct list_t {
     Node head;
@@ -223,31 +223,3 @@ const void *listGetDataAt(List l, int index) {
 
     return it->data;
 }
-
-/**
- * It returns a const pointer to the data of the node.
- *
- * @param n The node to get the data from.
- */
-const void *nodeGetData(Node n) {
-    return n->data;
-}
-
-/**
- * It returns the first node in the list.
- *
- * @param l a pointer to a linked list
- */
-Node listHead(List l) {
-    return l->head;
-}
-
-/**
- *
- *
- * @param n The node to get the next node of.
- */
-Node nodeGetNext(Node n) {
-    return n->next;
-}
-
