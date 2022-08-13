@@ -20,6 +20,10 @@ struct list_t {
     list_eq leq;
     list_copy lcopy;
     list_free lfree;
+
+    int length;
+    int _inner_iterator_index;
+    Node _inner_iterator_node;
 };
 
 /**
@@ -38,6 +42,11 @@ List listCreate(list_eq leq, list_copy lcopy, list_free lfree) {
     l->leq = leq;
     l->lcopy = lcopy;
     l->lfree = lfree;
+
+    l->length = 0;
+
+    l->_inner_iterator_index = -1;
+    l->_inner_iterator_node = NULL;
 
     return l;
 }
@@ -61,14 +70,7 @@ List listCopyFromIndex(List l, int index) {
     if (!l)
         return NULL;
 
-    List lc = (List) malloc(sizeof(*lc));
-    if (!lc)
-        memoryAllocationError();
-
-    lc->head = NULL;
-    lc->lcopy = l->lcopy;
-    lc->lfree = l->lfree;
-    lc->leq = l->leq;
+    List lc = listCreate(l->leq, l->lcopy, l->lfree);
 
     int i = 0;
     for (Node it = l->head; it; it = it->next) {
@@ -101,6 +103,9 @@ ListResult listInsertFirst(List l, void *new_data) {
     new_node->next = l->head;
 
     l->head = new_node;
+
+    l->length++;
+
     return LIST_SUCCESS;
 }
 
@@ -130,6 +135,8 @@ ListResult listAppend(List l, void *new_data) {
         for (it = l->head; it->next; it = it->next);
         it->next = new_node;
     }
+    l->length++;
+
     return LIST_SUCCESS;
 }
 
@@ -160,16 +167,7 @@ ListResult listFind(List l, void *to_find, void **found) {
  * @param l a pointer to a list
  */
 int listLength(List l) {
-    if (!l->head)
-        return 0;
-
-    int count = 1;
-    Node ptr = l->head;
-    while (ptr->next) {
-        ptr = ptr->next;
-        count++;
-    }
-    return count;
+    return l->length;
 }
 
 /**
@@ -203,10 +201,26 @@ const void *listGetDataAt(List l, int index) {
         return NULL;
     if (index < 0 || index >= listLength(l))
         return NULL;
-    Node it = l->head;
-    for (int i = 0; i < index; i++) {
+
+    int i;
+    Node it;
+    /* It's a way to optimize the function. If the index is bigger than the last index we got, we start from the last
+    index. */
+    if (l->_inner_iterator_node && l->_inner_iterator_index <= index) {
+        i = l->_inner_iterator_index;
+        it = l->_inner_iterator_node;
+    } else {
+        i = 0;
+        it = l->head;
+    }
+
+    for (; i < index; i++) {
         it = it->next;
     }
+    /* It's a way to optimize the function. Update the inner iterator. */
+    l->_inner_iterator_index = i;
+    l->_inner_iterator_node = it;
+
     return it->data;
 }
 

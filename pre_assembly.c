@@ -21,6 +21,13 @@
 #define MAX_LINE_LEN 2048
 
 
+/**
+ * It takes a source file and a destination file and copies the source file to the destination file, but it also replaces
+ * any macros with their definitions.
+ *
+ * @param src_file The file to read from.
+ * @param dst_file The file to write the output to.
+ */
 void unfold_macros(FILE *src_file, FILE *dst_file) {
     List macros = listCreate((list_eq) macroCmp, (list_copy) macroCopy, (list_free) macroDestroy);
 
@@ -87,6 +94,11 @@ void unfold_macros(FILE *src_file, FILE *dst_file) {
     listDestroy(macros);
 }
 
+/**
+ * It runs the pre-assembly step of the pipeline.
+ *
+ * @param filename The name of the file to be assembled.
+ */
 void run_pre_assembly(const char *filename) {
     const char *filename_with_suffix = strConcat(filename, SOURCE_FILE_SUFFIX);
     FILE *src_file = fopen(filename_with_suffix, "r");
