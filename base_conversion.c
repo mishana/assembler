@@ -97,8 +97,9 @@ int binaryToDecimal(const char *binary) {
  * @param decimal The decimal number to convert to binary.
  * @param binary The binary string that will be returned.
  */
-void decimalToBinary(int decimal, char *binary) {
+void decimalToBinary(int decimal, char *binary, int min_num_bits) {
     int num_bits = (int) ceil(log2(decimal));
+    num_bits = min_num_bits > num_bits ? min_num_bits : num_bits;
     /* Checking that the number of bits is less than or equal to 10. */
     assert(num_bits <= BINARY_WORD_SIZE);
 //    char* binary = (char*)malloc(sizeof(char) * (num_bits + 1));

@@ -7,7 +7,7 @@
 #include "errors.h"
 #include <stdlib.h>
 #include <string.h>
-#include "symtab.h"
+#include "const_tables.h"
 
 #define WHITESPACE_DELIM " \t\n "
 #define OPERANDS_DELIM ","
@@ -28,19 +28,77 @@ struct statement_t {
     List operands;
 };
 
+
+/**
+ * It checks if the line is a comment line
+ *
+ * @param line The line to check.
+ * @return true if the line is a comment line, false otherwise.
+ */
 static bool isCommentLine(const char *line) {
     return strStartsWith(line, COMMENT_PREFIX, true);
 }
 
+/**
+ * It checks if a string is a label
+ *
+ * @param s the string to check
+ *
+ * @return true if the string is a label, false otherwise.
+ */
 static bool isLabel(const char *s) {
     // TODO: check label validity
     return strEndsWith(s, LABEL_SUFFUX);
 }
 
+/**
+ * It checks if the string is a directive.
+ *
+ * @param str The string to check.
+ *
+ * @return true if the string is a directive, false otherwise.
+ */
+static bool isDirective(const char *str) {
+    for (int i = 0; i < DIRECTIVES_SIZE; ++i) {
+        if (strcmp(str, DIRECTIVES[i]) == 0)
+            return true;
+    }
+    return false;
+}
+
+/**
+ * It checks if the string is an instruction.
+ *
+ * @param str The string to check
+ *
+ * @return true if the string is an instruction, false otherwise.
+ */
+static bool isInstruction(const char *str) {
+    for (int i = 0; i < INSTRUCTIONS_ALL_SIZE; ++i) {
+        if (strcmp(str, INSTRUCTIONS_ALL[i]) == 0)
+            return true;
+    }
+    return false;
+}
+
+/**
+ * It returns true if the string passed in is the start macro string
+ *
+ * @param s The string to check
+ *
+ * @return true if the string is the start macro string, false otherwise.
+ */
 static bool isMacroStart(const char *s) {
     return strcmp(s, START_MACRO_STR) == 0;
 }
 
+/**
+ * It returns true if the string passed to it is the string "END_MACRO"
+ *
+ * @param s The string to check.
+ *
+ * @return true if the string is the end macro string, false otherwise.
+ */
 static bool isMacroEnd(const char *s) {
     return strcmp(s, END_MACRO_STR) == 0;
 }
@@ -82,9 +140,15 @@ Statement parse(const char *line) {
         token = listGetDataAt(tokens, token_index);
     }
     StatementType type;
-    if (isMacroStart(token)) {
+    if (isMacroStart(token) && listLength(tokens) == 2) {
         type = MACRO_START;
-        // TODO: check validity of macro name?
+
+        const char *macro_name = listGetDataAt(tokens, 1);
+        if (isDirective(macro_name) || isInstruction(macro_name)) {
+            // FIXME: error or something
+            listDestroy(tokens);
+            return NULL;
+        }
     } else if (isMacroEnd(token) && listLength(tokens) == 1) {
         type = MACRO_END;
     } else if (isDirective(token)) {
