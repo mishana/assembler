@@ -71,6 +71,11 @@ static bool isDirective(const char *str) {
     return false;
 }
 
+/**
+ * It checks if the directive is a data store directive. I.e., it checks if the directive is .data, .string or .struct
+ *
+ * @param directive The directive to check.
+ */
 bool isDataStoreDirective(const char *directive) {
     return strcmp(directive, DIRECTIVE_DATA) == 0 || strcmp(directive, DIRECTIVE_STRING) == 0 ||
            strcmp(directive, DIRECTIVE_STRUCT) == 0;
@@ -123,7 +128,11 @@ Statement parse(const char *line, int line_num) {
         return statementCreate(line_num, COMMENT, line, NULL, NULL, NULL, NULL);
     }
 
-    // TODO: check validity of operands delimiters, amount and placement
+//    if (check_line_syntax) {
+        // TODO: check validity of operands delimiters, amount and placement
+//        return NULL;
+//    }
+
     const char *line_replaced = strReplace(line, OPERANDS_DELIM, WHITESPACE_DELIM);
     if (!line_replaced) {
         memoryAllocationError();
@@ -327,6 +336,10 @@ static bool labelCheckSyntax(Statement s) {
 static bool macroCheckSyntax(Statement s) {
     assert(s->type == MACRO_START);
 
+    if (s->label != NULL) {
+        printf("Macro can not have a label on line %d\n", s->line_num);
+        return false;
+    }
     if (listLength(s->operands) != 1) {
         printf("Macro start statement must have exactly one argument on line %d\n", s->line_num);
         return false;
@@ -353,31 +366,38 @@ static bool macroCheckSyntax(Statement s) {
     return true;
 }
 
+static bool delimiterCheckSyntax(Statement s) {
+    // TODO: implement this
+}
+
 bool statementCheckSyntax(Statement s) {
     if (!s) {
         return false;
     }
 
-    // TODO: check if OTHER is even necessary, also check if len of arguments for macro better be dealt with here
     if (s->type == OTHER) {
         printf("Undefined statement on line %d\n", s->line_num);
         return false;
     }
+    if (s->type == COMMENT || s->type == EMPTY_LINE) {
+        return true;
+    }
+
+    bool valid = delimiterCheckSyntax(s);
 
     if (s->type == MACRO_START) {
-        return macroCheckSyntax(s);
+        return valid && macroCheckSyntax(s);
     } else if (s->type == MACRO_END) {
         if (listLength(s->operands) != 0) {
             printf("Macro end statement must have no arguments on line %d\n", s->line_num);
             return false;
         }
-    } else {
-        bool valid = true;
+    } else {  // directive or instruction
         if (s->label) {
             valid = valid && labelCheckSyntax(s);
         }
         // TODO: check mnemonic and operands syntax
-        return valid;
     }
-    return true;
+
+    return valid;
 }

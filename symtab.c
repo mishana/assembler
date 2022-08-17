@@ -4,12 +4,18 @@
 
 #include <malloc.h>
 #include <string.h>
+#include <stdbool.h>
 #include "symtab.h"
+#include "errors.h"
 
 
 struct symtab_entry_t {
     char *name;
     int value;
+    bool is_extern;
+
+    int line_num;
+    SymbolType type;
 };
 
 /**
@@ -17,11 +23,23 @@ struct symtab_entry_t {
  *
  * @param name The name of the symbol.
  * @param value The value of the symbol.
+ * @param is_extern Whether the symbol is external or not.
+ * @param line_num The line number of the symbol.
+ * @param type The type of the symbol.
+ *
+ * @return A new symbol table entry.
  */
-SymtabEntry symtabEntryCreate(const char *name, int value) {
+SymtabEntry symtabEntryCreate(const char *name, int value, bool is_extern, int line_num, SymbolType type) {
     SymtabEntry e = malloc(sizeof(*e));
+    if (!e) {
+        memoryAllocationError();
+    }
+
     e->name = strdup(name);
     e->value = value;
+    e->is_extern = is_extern;
+    e->line_num = line_num;
+    e->type = type;
     return e;
 }
 
@@ -41,7 +59,7 @@ int symtabEntryCmp(SymtabEntry e1, SymtabEntry e2) {
  * @param e The entry to copy.
  */
 SymtabEntry symtabEntryCopy(SymtabEntry e) {
-    return symtabEntryCreate(e->name, e->value);
+    return symtabEntryCreate(e->name, e->value, e->is_extern, e->line_num, e->type);
 }
 
 /**
@@ -70,4 +88,31 @@ const char *symtabEntryGetName(SymtabEntry e) {
  */
 int symtabEntryGetValue(SymtabEntry e) {
     return e->value;
+}
+
+/**
+ * It checks if the symbol is extern.
+ *
+ * @param e The symbol table entry to check.
+ */
+bool symtabEntryIsExtern(SymtabEntry e) {
+    return e->is_extern;
+}
+
+/**
+ * It returns the line number of the symbol table entry.
+ *
+ * @param e The symbol table entry to get the line number of.
+ */
+int symtabEntryGetLineNum(SymtabEntry e) {
+    return e->line_num;
+}
+
+/**
+ * It returns the type of the symbol table entry.
+ *
+ * @param e The symbol table entry to get the type of.
+ */
+ SymbolType symtabEntryGetType(SymtabEntry e) {
+    return e->type;
 }

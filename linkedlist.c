@@ -155,10 +155,29 @@ ListResult listFind(List l, void *to_find, void **found) {
         /* Comparing the data in the node to the data we are looking for. */
         if (l->leq(it->data, to_find) == 0) {
             *found = l->lcopy(it->data);
-            return LIST_FOUND;
+            return LIST_SUCCESS;
         }
     }
     return LIST_NOT_FOUND;
+}
+
+/**
+ * Checks if the list contains the given element.
+ *
+ * @param l The list to search through
+ * @param to_find the value to find in the list
+ */
+bool listContains(List l, void *to_find) {
+    if (!l || !to_find)
+        return false;
+
+    for (Node it = l->head; it; it = it->next) {
+        /* Comparing the data in the node to the data we are looking for. */
+        if (l->leq(it->data, to_find) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**

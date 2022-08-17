@@ -18,7 +18,7 @@
 #define SOURCE_FILE_SUFFIX ".as"
 #define AFTER_MACRO_SUFFIX ".am"
 
-#define MAX_LINE_LEN 2048
+#define MAX_LINE_LEN 80 + 1
 
 
 /**
@@ -45,19 +45,18 @@ bool unfold_macros(FILE *src_file, FILE *dst_file) {
         /* It's parsing the line. */
         line_num++;
         Statement s = parse(line, line_num);
-        if (!s) { // comment or empty line
+        if (!s) { // Parsing failed.
             continue;
         }
 
         if (statementGetType(s) == MACRO_START) {
             is_macro = true;
             macro_name = strdup(listGetDataAt(statementGetOperands(s), 0));
-            statementCheckSyntax(s);
+            success = success && statementCheckSyntax(s);
             macro_def_line_num = line_num;
-            // TODO: check validity of macro name and validity of line
 
         } else if (statementGetType(s) == MACRO_END) {
-            statementCheckSyntax(s);
+            success = success && statementCheckSyntax(s);
             Macro m = macroCreate(macro_name, macro_body, macro_def_line_num);
 
             Macro found_macro;
@@ -107,7 +106,7 @@ bool unfold_macros(FILE *src_file, FILE *dst_file) {
             ListResult res = listFind(macros, dummy, (void **) &found_macro);
             macroDestroy(dummy);
 
-            if (res == LIST_FOUND) {
+            if (res == LIST_SUCCESS) { // found macro
                 fputs(macroGetBody(found_macro), dst_file);
                 macroDestroy(found_macro);
             } else {

@@ -24,6 +24,8 @@ void run_second_pass(const char *filename, List symtab) {
 
     // TODO: implement second pass
 
+    listDestroy(symtab);
+
     fclose(src_file);
     fclose(entries_file);
     fclose(external_file);

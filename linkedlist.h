@@ -18,7 +18,7 @@ typedef struct list_t *List;
 
 /** possible return values */
 typedef enum {
-    LIST_SUCCESS, LIST_NULL_ARGUMENT, LIST_NOT_FOUND, LIST_FOUND
+    LIST_SUCCESS, LIST_NULL_ARGUMENT, LIST_NOT_FOUND
 } ListResult;
 
 List listCreate(list_eq leq, list_copy lcopy, list_free lfree);
@@ -32,6 +32,8 @@ ListResult listInsertFirst(List l, void *new_data);
 ListResult listAppend(List l, void *new_data);
 
 ListResult listFind(List l, void *to_find, void **found);
+
+bool listContains(List l, void *to_find);
 
 int listLength(List l);
 

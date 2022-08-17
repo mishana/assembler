@@ -40,4 +40,8 @@ int getDirectiveCode(const char *directive);
 
 int getInstructionCode(const char *instruction);
 
+int getInstructionNumberOfOperands(const char *instruction);
+
+int get_addressing_mode(const char *operand);
+
 #endif //ASSEMBLER_CONST_TABLES_H
