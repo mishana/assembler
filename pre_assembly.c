@@ -9,7 +9,6 @@
 
 #include "pre_assembly.h"
 #include "linkedlist.h"
-#include "str_utils.h"
 #include "errors.h"
 #include "macro.h"
 #include "parser.h"

@@ -176,7 +176,7 @@ int listLength(List l) {
  * @param l A pointer to a List to destroy.
  */
 void listDestroy(List l) {
-    /* If the list is empty, there's nothing to destroy. */
+    /* If the list is NULL, there's nothing to destroy. */
     if (!l)
         return;
 
