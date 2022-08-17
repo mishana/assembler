@@ -15,7 +15,7 @@
  * @param src_addressing_code the addressing code of the source operand
  * @param dst_addressing_code the addressing code of the destination operand
  */
-bool isValidAddressing_2_OP(int instruction_code, int src_addressing_code, int dst_addressing_code) {
+bool isValidAddressing_2_OP(int instruction_code, int src_addressing_code, int dst_addressing_code) { // TODO: maybe change instruction_code to const char *instruction
     assert(instruction_code >= 0 && instruction_code < INSTRUCTIONS_ALL_SIZE);
 
     const char *instruction = INSTRUCTIONS_ALL[instruction_code];
@@ -38,7 +38,7 @@ bool isValidAddressing_2_OP(int instruction_code, int src_addressing_code, int d
  * @param instruction_code the code of the instruction (e.g. MOV, ADD, etc.)
  * @param addressing_code the addressing code of the instruction
  */
-bool isValidAddressing_1_OP(int instruction_code, int addressing_code) {
+bool isValidAddressing_1_OP(int instruction_code, int addressing_code) {  // TODO: maybe change instruction_code to const char *instruction
     assert(instruction_code >= 0 && instruction_code < INSTRUCTIONS_ALL_SIZE);
 
     const char *instruction = INSTRUCTIONS_ALL[instruction_code];

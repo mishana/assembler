@@ -11,15 +11,15 @@
 
 
 typedef enum {
-    DIRECTIVE, INSTRUCTION, MACRO_START, MACRO_END, OTHER
+    DIRECTIVE, INSTRUCTION, MACRO_START, MACRO_END, COMMENT, EMPTY_LINE, OTHER
 } StatementType;
 
 typedef struct statement_t *Statement;
 
-Statement parse(const char *line);
+Statement parse(const char *line, int line_num);
 
 Statement
-statementCreate(StatementType type, const char *raw_text, const char *label, const char *mnemonic, List operands,
+statementCreate(int line_num, StatementType type, const char *raw_text, const char *label, const char *mnemonic, List operands,
                 List tokens);
 
 void statementDestroy(Statement s);
@@ -35,5 +35,11 @@ const char *statementGetMnemonic(Statement s);
 const List statementGetOperands(Statement s);
 
 const List statementGetTokens(Statement s);
+
+bool statementCheckSyntax(Statement s);
+
+int statementGetLineNum(Statement s);
+
+bool isDataStoreDirective(const char *directive);
 
 #endif //ASSEMBLER_PARSER_H

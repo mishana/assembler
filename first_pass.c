@@ -6,33 +6,55 @@
 #include "parser.h"
 #include "str_utils.h"
 #include "errors.h"
+#include "symtab.h"
+#include "const_tables.h"
+#include "file_utils.h"
 
 #include <stdio.h>
 
-#define SOURCE_FILE_SUFFIX ".as"
-#define AFTER_MACRO_SUFFIX ".am"
+#define SOURCE_FILE_SUFFIX ".am"
+#define OBJECT_FILE_SUFFIX ".ob"
+#define ENTRIES_FILE_SUFFIX ".ent"
+#define EXTERNAL_FILE_SUFFIX ".ext"
 
 #define MAX_LINE_LEN 2048
 
 
+List buildSymbolTable(FILE *src_file, FILE *obj_file, FILE *entries_file, FILE *external_file) {
+    List symtab = listCreate((list_eq) symtabEntryCmp, (list_copy) symtabEntryCopy, (list_free) symtabEntryDestroy);
+
+    int ic = 0, dc = 0;
+    bool is_label = false;
+
+    int line_num = 0;
+    char line[MAX_LINE_LEN];
+    while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
+        line_num++;
+        Statement s = parse(line, line_num);
+        if (!statementCheckSyntax(s)) {
+            continue;
+        }
+
+        if (statementGetLabel(s)) {
+            is_label = true;
+
+        }
+
+    }
+    return symtab;
+}
+
 void run_first_pass(const char *filename) {
-//    const char *filename_with_suffix = strConcat(filename, SOURCE_FILE_SUFFIX);
-//    FILE *src_file = fopen(filename_with_suffix, "r");
-//    if (!src_file) {
-//        fileNotFoundError(filename_with_suffix);
-//    }
-//    free((void *) filename_with_suffix);
-//
-//    // TODO: different file extension for the output file
-//    filename_with_suffix = strConcat(filename, AFTER_MACRO_SUFFIX);
-//    FILE *dst_file = fopen(filename_with_suffix, "w");
-//    if (!dst_file) {
-//        fileNotFoundError(filename_with_suffix);
-//    }
-//    free((void *) filename_with_suffix);
-//
-//    // TODO: logic here
-//
-//    fclose(src_file);
-//    fclose(dst_file);
+    FILE *src_file = openFileWithSuffix(filename, "r", SOURCE_FILE_SUFFIX);
+
+    FILE *entries_file = openFileWithSuffix(filename, "w", ENTRIES_FILE_SUFFIX);
+    FILE *external_file = openFileWithSuffix(filename, "w", EXTERNAL_FILE_SUFFIX);
+    FILE *object_file = openFileWithSuffix(filename, "w", OBJECT_FILE_SUFFIX);
+
+    List symtab = buildSymbolTable(src_file, object_file, entries_file, external_file);
+
+    fclose(src_file);
+    fclose(entries_file);
+    fclose(external_file);
+    fclose(object_file);
 }

@@ -22,6 +22,12 @@
 #define STRUCT_ADDRESSING 2
 #define REGISTER_ADDRESSING 3
 
+#define DIRECTIVE_DATA ".data"
+#define DIRECTIVE_STRING ".string"
+#define DIRECTIVE_STRUCT ".struct"
+#define DIRECTIVE_ENTRY ".entry"
+#define DIRECTIVE_EXTERN ".extern"
+
 extern const char *DIRECTIVES[];
 extern const char *INSTRUCTIONS_2_OP[];
 extern const char *INSTRUCTIONS_1_OP[];

@@ -7,6 +7,9 @@
 #include "errors.h"
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <assert.h>
 #include "const_tables.h"
 
 #define WHITESPACE_DELIM " \t\n "
@@ -17,8 +20,10 @@
 #define START_MACRO_STR "macro"
 #define END_MACRO_STR "endmacro"
 
+#define LABEL_MAX_LENGTH 30
 
 struct statement_t {
+    int line_num;
     const char *raw_text;
     List tokens;
 
@@ -66,6 +71,11 @@ static bool isDirective(const char *str) {
     return false;
 }
 
+bool isDataStoreDirective(const char *directive) {
+    return strcmp(directive, DIRECTIVE_DATA) == 0 || strcmp(directive, DIRECTIVE_STRING) == 0 ||
+           strcmp(directive, DIRECTIVE_STRUCT) == 0;
+}
+
 /**
  * It checks if the string is an instruction.
  *
@@ -108,9 +118,9 @@ static bool isMacroEnd(const char *s) {
  *
  * @param line The line of text to parse.
  */
-Statement parse(const char *line) {
+Statement parse(const char *line, int line_num) {
     if (isCommentLine(line)) {
-        return NULL;
+        return statementCreate(line_num, COMMENT, line, NULL, NULL, NULL, NULL);
     }
 
     // TODO: check validity of operands delimiters, amount and placement
@@ -124,7 +134,7 @@ Statement parse(const char *line) {
     if (listLength(tokens) == 0) { // empty line
         listDestroy(tokens);
         free((char *) line_replaced);
-        return NULL;
+        return statementCreate(line_num, EMPTY_LINE, line, NULL, NULL, NULL, NULL);
     }
 
     free((char *) line_replaced);
@@ -134,22 +144,14 @@ Statement parse(const char *line) {
 
     const char *label = NULL;
     if (isLabel(token)) {
-        label = token;
-        // TODO: check label validity
+        label = strndup(token, strlen(token) - strlen(LABEL_SUFFUX));
         token_index++;
         token = listGetDataAt(tokens, token_index);
     }
     StatementType type;
-    if (isMacroStart(token) && listLength(tokens) == 2) {
+    if (isMacroStart(token)) { // && listLength(tokens) == 2) {
         type = MACRO_START;
-
-        const char *macro_name = listGetDataAt(tokens, 1);
-        if (isDirective(macro_name) || isInstruction(macro_name)) {
-            // FIXME: error or something
-            listDestroy(tokens);
-            return NULL;
-        }
-    } else if (isMacroEnd(token) && listLength(tokens) == 1) {
+    } else if (isMacroEnd(token)) { // && listLength(tokens) == 1) {
         type = MACRO_END;
     } else if (isDirective(token)) {
         type = DIRECTIVE;
@@ -165,7 +167,8 @@ Statement parse(const char *line) {
     token_index++;
     List operands = listCopyFromIndex(tokens, token_index);
 
-    Statement s = statementCreate(type, line, label, mnemonic, operands, tokens);
+    Statement s = statementCreate(line_num, type, line, label, mnemonic, operands, tokens);
+    free((char *) label);
     listDestroy(tokens);
     listDestroy(operands);
 
@@ -183,12 +186,14 @@ Statement parse(const char *line) {
  * @param tokens A list of tokens that make up the statement.
  */
 Statement
-statementCreate(StatementType type, const char *raw_text, const char *label, const char *mnemonic, List operands,
+statementCreate(int line_num, StatementType type, const char *raw_text, const char *label, const char *mnemonic,
+                List operands,
                 List tokens) {
     Statement s = (Statement) malloc(sizeof(*s));
     if (!s)
         memoryAllocationError();
 
+    s->line_num = line_num;
     s->type = type;
     s->raw_text = strdup(raw_text);
     s->label = strdup(label);
@@ -212,6 +217,15 @@ void statementDestroy(Statement s) {
     listDestroy(s->operands);
     listDestroy(s->tokens);
     free(s);
+}
+
+/**
+ * It returns the line number of the statement.
+ *
+ * @param s The statement to get the line number of.
+ */
+int statementGetLineNum(Statement s) {
+    return s->line_num;
 }
 
 /**
@@ -268,3 +282,102 @@ const List statementGetTokens(Statement s) {
     return s->tokens;
 }
 
+/**
+ * It checks the syntax of the label.
+ *
+ * @param s The statement to check.
+ */
+static bool labelCheckSyntax(Statement s) {
+    assert(s->label != NULL);
+
+    if (strlen(s->label) > LABEL_MAX_LENGTH) {
+        printf("Label is too long on line %d\n", s->line_num);
+        return false;
+    }
+    if (!isalpha(s->label[0])) {
+        printf("Label must start with a letter on line %d\n", s->line_num);
+        return false;
+    }
+    for (int i = 1; i < strlen(s->label); i++) {
+        if (!isalnum(s->label[i])) {
+            printf("Label must contain only letters and digits on line %d\n", s->line_num);
+            return false;
+        }
+    }
+    if (s->type != DIRECTIVE && s->type != INSTRUCTION) {
+        printf("Label can only be used with directives and instructions on line %d\n", s->line_num);
+        return false;
+    }
+    if (s->type == DIRECTIVE && !isDataStoreDirective(s->mnemonic)) {
+        printf("Label can only be used with directives data, struct and string on line %d\n", s->line_num);
+        return false;
+    }
+    if (isDirective(s->label) || isInstruction(s->label)) {
+        printf("Label can not be an instruction or directive on line %d\n", s->line_num);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * It checks the syntax of the macro.
+ *
+ * @param s The statement to check.
+ */
+static bool macroCheckSyntax(Statement s) {
+    assert(s->type == MACRO_START);
+
+    if (listLength(s->operands) != 1) {
+        printf("Macro start statement must have exactly one argument on line %d\n", s->line_num);
+        return false;
+    }
+    const char *macro_name = listGetDataAt(s->operands, 0);
+    if (isDirective(macro_name) || isInstruction(macro_name)) {
+        printf("Macro name can't be an instruction or a directive! on line %d\n", s->line_num);
+        return false;
+    }
+    if (strlen(macro_name) > LABEL_MAX_LENGTH) {
+        printf("Macro name is too long on line %d\n", s->line_num);
+        return false;
+    }
+    if (!isalpha(macro_name[0])) {
+        printf("Macro name must start with a letter on line %d\n", s->line_num);
+        return false;
+    }
+    for (int i = 1; i < strlen(macro_name); i++) {
+        if (!isalnum(macro_name[i])) {
+            printf("Macro name must contain only letters and digits on line %d\n", s->line_num);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool statementCheckSyntax(Statement s) {
+    if (!s) {
+        return false;
+    }
+
+    // TODO: check if OTHER is even necessary, also check if len of arguments for macro better be dealt with here
+    if (s->type == OTHER) {
+        printf("Undefined statement on line %d\n", s->line_num);
+        return false;
+    }
+
+    if (s->type == MACRO_START) {
+        return macroCheckSyntax(s);
+    } else if (s->type == MACRO_END) {
+        if (listLength(s->operands) != 0) {
+            printf("Macro end statement must have no arguments on line %d\n", s->line_num);
+            return false;
+        }
+    } else {
+        bool valid = true;
+        if (s->label) {
+            valid = valid && labelCheckSyntax(s);
+        }
+        // TODO: check mnemonic and operands syntax
+        return valid;
+    }
+    return true;
+}

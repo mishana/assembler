@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "errors.h"
 #include "pre_assembly.h"
@@ -16,7 +17,11 @@ int main(int argc, char **argv) {
         const char *file_to_compile = argv[i];
 
         printf("Run pre-assembly for %s\n", file_to_compile);
-        run_pre_assembly(file_to_compile);
+        bool pre_assembly_res = run_pre_assembly(file_to_compile);
+        if (!pre_assembly_res) {
+            errorWithMsg("Pre-assembly failed. exiting");
+        }
+
         printf("Run first-pass for %s\n", file_to_compile);
         run_first_pass(file_to_compile);
         printf("Run second-pass for %s\n", file_to_compile);

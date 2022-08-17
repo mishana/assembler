@@ -177,7 +177,7 @@ int listLength(List l) {
  */
 void listDestroy(List l) {
     /* If the list is empty, there's nothing to destroy. */
-    if (!l->head)
+    if (!l)
         return;
 
     /* Freeing the memory allocated for the nodes in the list. */

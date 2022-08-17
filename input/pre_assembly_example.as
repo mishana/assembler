@@ -11,6 +11,11 @@ LOOP:   jmp END
         m1
         bne LOOP
 END:    hlt
+       ; macro m1
+       ;     inc K
+
+;            mov S1.2 ,r3
+ ;       endmacro
 STR:    .string "abcdef"
 LENGTH: .data 6,-9,15
 K:      .data 22

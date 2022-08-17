@@ -8,7 +8,7 @@
 
 typedef struct macro_t *Macro;
 
-Macro macroCreate(const char *name, const char *body);
+Macro macroCreate(const char *name, const char *body, int def_line_num);
 
 int macroCmp(Macro m1, Macro m2);
 
@@ -19,5 +19,7 @@ void macroDestroy(Macro m);
 const char *macroGetBody(Macro m);
 
 const char *macroGetName(Macro m);
+
+int macroGetDefLineNum(Macro m);
 
 #endif //ASSEMBLER_MACRO_H

@@ -11,6 +11,8 @@
 
 /* Defining a new type called `struct macro_t` which is a struct with two fields: `name` and `body`. */
 struct macro_t {
+    int def_line_num;
+
     const char *name;
     const char *body;
 };
@@ -21,7 +23,7 @@ struct macro_t {
  * @param name The name of the macro.
  * @param body The body of the macro.
  */
-Macro macroCreate(const char *name, const char *body) {
+Macro macroCreate(const char *name, const char *body, int def_line_num) {
     Macro m = (Macro) malloc(sizeof(*m));
     if (!m)
         memoryAllocationError();
@@ -37,6 +39,8 @@ Macro macroCreate(const char *name, const char *body) {
     } else {
         m->body = NULL;
     }
+
+    m->def_line_num = def_line_num;
 
     return m;
 }
@@ -57,7 +61,7 @@ int macroCmp(Macro m1, Macro m2) {
  * @param m The macro to copy.
  */
 Macro macroCopy(Macro m) {
-    return macroCreate(m->name, m->body);
+    return macroCreate(m->name, m->body, m->def_line_num);
 }
 
 /**
@@ -89,4 +93,13 @@ const char *macroGetBody(Macro m) {
  */
 const char *macroGetName(Macro m) {
     return m->name;
+}
+
+/**
+ * It returns the line number of the macro definition.
+ *
+ * @param m The macro to get the line number of.
+ */
+int macroGetDefLineNum(Macro m) {
+    return m->def_line_num;
 }

@@ -8,7 +8,7 @@
 #define NOT_FOUND -1
 
 
-const char *DIRECTIVES[] = {".data", ".string", ".struct", ".entry", ".extern"};
+const char *DIRECTIVES[] = {DIRECTIVE_DATA, DIRECTIVE_STRING, DIRECTIVE_STRUCT, DIRECTIVE_ENTRY, DIRECTIVE_EXTERN};
 const char *INSTRUCTIONS_2_OP[] = {"mov", "cmp", "add", "sub", "lea"};
 const char *INSTRUCTIONS_1_OP[] = {"not", "clr", "inc", "dec", "jmp", "bne", "get", "prn",
                                    "jsr"};
