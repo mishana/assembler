@@ -3,12 +3,15 @@
 //
 
 #include <string.h>
+#include <ctype.h>
 #include "const_tables.h"
 #include "str_utils.h"
+#include "symtab.h"
 
 #define NOT_FOUND -1
 
 #define IMMEDIATE_ADDRESSING_PREFIX '#'
+#define REGISTER_PREFIX 'r'
 
 
 const char *DIRECTIVES[] = {DIRECTIVE_DATA, DIRECTIVE_STRING, DIRECTIVE_STRUCT, DIRECTIVE_ENTRY, DIRECTIVE_EXTERN};
@@ -22,7 +25,32 @@ const char *INSTRUCTIONS_ALL[] = {"mov", "cmp", "add", "sub",
                                   "prn", "jsr", "rts", "hlt"};
 const char *REGISTERS[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"};
 
+/**
+ * It checks if the string is a number.
+ *
+ * @param str The string to check
+ */
+static bool isNumeric(const char *str) {
+    int i = 0;
+    if (str[0] == '-' || str[0] == '+') {
+        i = 1;
+    }
 
+    for (; str[i] != '\0'; i++) {
+        if (!isdigit(str[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static isOp
+
+/**
+ * It returns the code of the directive.
+ *
+ * @param directive The directive to get the code for.
+ */
 int getDirectiveCode(const char *directive) {
     for (int i = 0; i < DIRECTIVES_SIZE; i++) {
         if (strcmp(directive, DIRECTIVES[i]) == 0) {
@@ -32,6 +60,11 @@ int getDirectiveCode(const char *directive) {
     return NOT_FOUND;
 }
 
+/**
+ * It returns the instruction code for the given instruction.
+ *
+ * @param instruction The instruction to get the code for.
+ */
 int getInstructionCode(const char *instruction) {
     for (int i = 0; i < INSTRUCTIONS_ALL_SIZE; i++) {
         if (strcmp(instruction, INSTRUCTIONS_ALL[i]) == 0) {
@@ -96,16 +129,32 @@ int getInstructionNumberOfOperands(const char *instruction) {
     return -1;
 }
 
-int get_addressing_mode(const char *operand) {
-    // TODO: continue here, also need to think how to get the values of numericall operands. (e.g. #-10)
-    if (operand[0] == IMMEDIATE_ADDRESSING_PREFIX) {
+/**
+ * It returns the addressing mode of the operand.
+ *
+ * @param operand The operand string.
+ * @param symbol_table A list of symbols and their values.
+ */
+AddressingMode get_addressing_mode(const char *operand, List symbol_table) {
+    if (operand[0] == IMMEDIATE_ADDRESSING_PREFIX && isNumeric(operand + 1)) {
         return IMMEDIATE_ADDRESSING;
-    } else if (strStartsWith(operand, REGISTER_PREFIX)) {
+    } else if (operand[0] == REGISTER_PREFIX && strlen(operand) == 2 && operand[1] >= '0' && operand[1] <= '7') {
         return REGISTER_ADDRESSING;
-    } else if (strStartsWith(operand, LABEL_PREFIX)) {
-        return STRUCT_ADDRESSING;
-    } else if (){
-        return DIRECT_ADDRESSING;
+    } else {
+        if (isInSymbolTable(symbol_table, operand)) {
+            return DIRECT_ADDRESSING;
+        } else {
+            List split_operand = strSplit(operand, ".");
+            const char *before_delim = listGetDataAt(split_operand, 0);
+            const char *after_delim = listGetDataAt(split_operand, 1);
+
+            if (listLength(split_operand) == 2 && (strcmp(after_delim, "1") == 0 ||
+                                                   strcmp(after_delim, "2") == 0) &&
+                isInSymbolTable(symbol_table, before_delim)) {
+                return STRUCT_ADDRESSING;
+            } else {
+                return INVALID_ADDRESSING;
+            }
+        }
     }
 }
-

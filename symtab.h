@@ -5,6 +5,8 @@
 #ifndef ASSEMBLER_SYMTAB_H
 #define ASSEMBLER_SYMTAB_H
 
+#include "linkedlist.h"
+
 typedef enum SymbolType {
     SYMBOL_DATA,
     SYMBOL_CODE,
@@ -13,7 +15,7 @@ typedef enum SymbolType {
 
 typedef struct symtab_entry_t *SymtabEntry;
 
-SymtabEntry symtabEntryCreate(const char *name, int value, bool is_extern, int line_num, SymbolType type);
+SymtabEntry symtabEntryCreate(const char *name, int value, bool is_extern, bool is_struct, int line_num, SymbolType type);
 
 int symtabEntryCmp(SymtabEntry e1, SymtabEntry e2);
 
@@ -30,5 +32,7 @@ bool symtabEntryIsExtern(SymtabEntry e);
 int symtabEntryGetLineNum(SymtabEntry e);
 
 SymbolType symtabEntryGetType(SymtabEntry e);
+
+bool isInSymbolTable(List symtab, const char *name);
 
 #endif //ASSEMBLER_SYMTAB_H

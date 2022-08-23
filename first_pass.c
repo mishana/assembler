@@ -58,9 +58,11 @@ List buildSymbolTable(FILE *src_file) {
 
             SymtabEntry entry;
             if (statementGetType(s) == DIRECTIVE) {
-                entry = symtabEntryCreate(statementGetLabel(s), dc, false, line_num, SYMBOL_DATA);
+                const char *directive = statementGetMnemonic(s);
+                bool is_struct = strcmp(directive, DIRECTIVE_STRUCT) == 0;
+                entry = symtabEntryCreate(statementGetLabel(s), dc, false, is_struct, line_num, SYMBOL_DATA);
             } else {  // INSTRUCTION
-                entry = symtabEntryCreate(statementGetLabel(s), ic, false, line_num, SYMBOL_CODE);
+                entry = symtabEntryCreate(statementGetLabel(s), ic, false, false, line_num, SYMBOL_CODE);
             }
 
             SymtabEntry found_entry;
@@ -87,7 +89,7 @@ List buildSymbolTable(FILE *src_file) {
                     for (int i = 0; i < listLength(extern_operands); i++) {
                         const char *extern_operand = listGetDataAt(extern_operands, i);
 
-                        SymtabEntry entry = symtabEntryCreate(extern_operand, 0, true, line_num, SYMBOL_EXTERN);
+                        SymtabEntry entry = symtabEntryCreate(extern_operand, 0, true, false, line_num, SYMBOL_EXTERN);
 
                         SymtabEntry found_entry;
                         if (listFind(symtab, entry, (void **) &found_entry) == LIST_SUCCESS) {

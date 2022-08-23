@@ -12,7 +12,9 @@
 struct symtab_entry_t {
     char *name;
     int value;
+
     bool is_extern;
+    bool is_struct;
 
     int line_num;
     SymbolType type;
@@ -24,12 +26,14 @@ struct symtab_entry_t {
  * @param name The name of the symbol.
  * @param value The value of the symbol.
  * @param is_extern Whether the symbol is external or not.
+ * @param is_struct Whether the symbol is a struct or not.
  * @param line_num The line number of the symbol.
  * @param type The type of the symbol.
  *
  * @return A new symbol table entry.
  */
-SymtabEntry symtabEntryCreate(const char *name, int value, bool is_extern, int line_num, SymbolType type) {
+SymtabEntry
+symtabEntryCreate(const char *name, int value, bool is_extern, bool is_struct, int line_num, SymbolType type) {
     SymtabEntry e = malloc(sizeof(*e));
     if (!e) {
         memoryAllocationError();
@@ -59,7 +63,7 @@ int symtabEntryCmp(SymtabEntry e1, SymtabEntry e2) {
  * @param e The entry to copy.
  */
 SymtabEntry symtabEntryCopy(SymtabEntry e) {
-    return symtabEntryCreate(e->name, e->value, e->is_extern, e->line_num, e->type);
+    return symtabEntryCreate(e->name, e->value, e->is_extern, e->is_struct, e->line_num, e->type);
 }
 
 /**
@@ -113,6 +117,27 @@ int symtabEntryGetLineNum(SymtabEntry e) {
  *
  * @param e The symbol table entry to get the type of.
  */
- SymbolType symtabEntryGetType(SymtabEntry e) {
+SymbolType symtabEntryGetType(SymtabEntry e) {
     return e->type;
+}
+
+/**
+ * It checks if the name is in the symbol table.
+ *
+ * @param symtab The symbol table to search in.
+ * @param name the name of the symbol to look for
+ */
+bool isInSymbolTable(List symtab, const char *name) {
+    bool res;
+    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, false, 0, SYMBOL_DATA);
+    SymtabEntry found_entry;
+    if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_SUCCESS) {
+        res = true;
+    } else {
+        res = false;
+    }
+    symtabEntryDestroy(dummy_entry);
+    symtabEntryDestroy(found_entry);
+
+    return res;
 }

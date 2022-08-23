@@ -6,6 +6,7 @@
 #define ASSEMBLER_CONST_TABLES_H
 
 #include <stdbool.h>
+#include "linkedlist.h"
 
 #define DIRECTIVES_SIZE 5
 #define INSTRUCTIONS_2_OP_SIZE 5
@@ -17,16 +18,19 @@
 #define E 1
 #define R 2
 
-#define IMMEDIATE_ADDRESSING 0
-#define DIRECT_ADDRESSING 1
-#define STRUCT_ADDRESSING 2
-#define REGISTER_ADDRESSING 3
-
 #define DIRECTIVE_DATA ".data"
 #define DIRECTIVE_STRING ".string"
 #define DIRECTIVE_STRUCT ".struct"
 #define DIRECTIVE_ENTRY ".entry"
 #define DIRECTIVE_EXTERN ".extern"
+
+typedef enum {
+    IMMEDIATE_ADDRESSING,
+    DIRECT_ADDRESSING,
+    STRUCT_ADDRESSING,
+    REGISTER_ADDRESSING,
+    INVALID_ADDRESSING
+} AddressingMode;
 
 extern const char *DIRECTIVES[];
 extern const char *INSTRUCTIONS_2_OP[];
@@ -42,6 +46,6 @@ int getInstructionCode(const char *instruction);
 
 int getInstructionNumberOfOperands(const char *instruction);
 
-int get_addressing_mode(const char *operand);
+AddressingMode get_addressing_mode(const char *operand, List symbol_table);
 
 #endif //ASSEMBLER_CONST_TABLES_H
