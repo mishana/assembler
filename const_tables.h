@@ -29,7 +29,8 @@ typedef enum {
     DIRECT_ADDRESSING,
     STRUCT_ADDRESSING,
     REGISTER_ADDRESSING,
-    INVALID_ADDRESSING
+    INVALID_ADDRESSING,
+    EMPTY_ADDRESSING
 } AddressingMode;
 
 extern const char *DIRECTIVES[];
@@ -46,6 +47,6 @@ int getInstructionCode(const char *instruction);
 
 int getInstructionNumberOfOperands(const char *instruction);
 
-AddressingMode get_addressing_mode(const char *operand, List symbol_table);
+AddressingMode getAddressingMode(const char *operand);
 
 #endif //ASSEMBLER_CONST_TABLES_H

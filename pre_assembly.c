@@ -27,9 +27,11 @@
  *
  * @param src_file The file to read from.
  * @param dst_file The file to write the output to.
+ * @param filename The name of the source file.
+ *
  * @return true if the operation was successful, false otherwise.
  */
-bool unfold_macros(FILE *src_file, FILE *dst_file) {
+bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
     List macros = listCreate((list_eq) macroCmp, (list_copy) macroCopy, (list_free) macroDestroy);
 
     bool success = true;
@@ -52,11 +54,11 @@ bool unfold_macros(FILE *src_file, FILE *dst_file) {
         if (statementGetType(s) == MACRO_START) {
             is_macro = true;
             macro_name = strdup(listGetDataAt(statementGetOperands(s), 0));
-            success = success && statementCheckSyntax(s);
+            success = success && statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX);
             macro_def_line_num = line_num;
 
         } else if (statementGetType(s) == MACRO_END) {
-            success = success && statementCheckSyntax(s);
+            success = success && statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX);
             Macro m = macroCreate(macro_name, macro_body, macro_def_line_num);
 
             Macro found_macro;
@@ -65,8 +67,8 @@ bool unfold_macros(FILE *src_file, FILE *dst_file) {
             if (res == LIST_NOT_FOUND) {  // macro not found
                 listAppend(macros, m);
             } else { // found macro
-                printf("Macro %s on line %d was already previously defined on line %d\n", macro_name,
-                       macro_def_line_num, macroGetDefLineNum(found_macro));
+                printf("Error in %s.%s line %d: Macro %s on was already previously defined on line %d\n",
+                       filename, SOURCE_FILE_SUFFIX, macro_def_line_num, macro_name, macroGetDefLineNum(found_macro));
                 success = false;
                 macroDestroy(found_macro);
             }
@@ -130,7 +132,7 @@ bool run_pre_assembly(const char *filename) {
     FILE *src_file = openFileWithSuffix(filename, "r", SOURCE_FILE_SUFFIX);
     FILE *dst_file = openFileWithSuffix(filename, "w", AFTER_MACRO_SUFFIX);
 
-    bool res = unfold_macros(src_file, dst_file);
+    bool res = unfold_macros(src_file, dst_file, filename);
 
     fclose(src_file);
     fclose(dst_file);

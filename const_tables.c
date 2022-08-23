@@ -44,8 +44,6 @@ static bool isNumeric(const char *str) {
     return true;
 }
 
-static isOp
-
 /**
  * It returns the code of the directive.
  *
@@ -133,28 +131,29 @@ int getInstructionNumberOfOperands(const char *instruction) {
  * It returns the addressing mode of the operand.
  *
  * @param operand The operand string.
- * @param symbol_table A list of symbols and their values.
  */
-AddressingMode get_addressing_mode(const char *operand, List symbol_table) {
-    if (operand[0] == IMMEDIATE_ADDRESSING_PREFIX && isNumeric(operand + 1)) {
-        return IMMEDIATE_ADDRESSING;
+AddressingMode getAddressingMode(const char *operand) {
+    if (operand[0] == IMMEDIATE_ADDRESSING_PREFIX) {
+        if (isNumeric(operand + 1)) {
+            return IMMEDIATE_ADDRESSING;
+        } else {
+            return INVALID_ADDRESSING;
+        }
     } else if (operand[0] == REGISTER_PREFIX && strlen(operand) == 2 && operand[1] >= '0' && operand[1] <= '7') {
         return REGISTER_ADDRESSING;
+    } else if (isdigit(operand[0])) {
+        return INVALID_ADDRESSING;
     } else {
-        if (isInSymbolTable(symbol_table, operand)) {
-            return DIRECT_ADDRESSING;
-        } else {
-            List split_operand = strSplit(operand, ".");
-            const char *before_delim = listGetDataAt(split_operand, 0);
-            const char *after_delim = listGetDataAt(split_operand, 1);
+        List split_operand = strSplit(operand, ".");
+        const char *before_delim = listGetDataAt(split_operand, 0);
+        const char *after_delim = listGetDataAt(split_operand, 1);
 
-            if (listLength(split_operand) == 2 && (strcmp(after_delim, "1") == 0 ||
-                                                   strcmp(after_delim, "2") == 0) &&
-                isInSymbolTable(symbol_table, before_delim)) {
-                return STRUCT_ADDRESSING;
-            } else {
-                return INVALID_ADDRESSING;
-            }
+        if (listLength(split_operand) == 2 && (strcmp(after_delim, "1") == 0 ||
+                                               strcmp(after_delim, "2") == 0) &&
+            strlen(before_delim) > 1 && isalpha(before_delim[0])) {
+            return STRUCT_ADDRESSING;
+        } else {
+            return DIRECT_ADDRESSING;
         }
     }
 }

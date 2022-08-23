@@ -36,7 +36,7 @@ const List statementGetOperands(Statement s);
 
 const List statementGetTokens(Statement s);
 
-bool statementCheckSyntax(Statement s);
+bool statementCheckSyntax(Statement s, const char *filename, const char *filename_suffix);
 
 int statementGetLineNum(Statement s);
 

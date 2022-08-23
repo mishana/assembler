@@ -122,6 +122,15 @@ SymbolType symtabEntryGetType(SymtabEntry e) {
 }
 
 /**
+ * It checks if the entry is a struct.
+ *
+ * @param e The entry to check
+ */
+bool symtabEntryIsStruct(SymtabEntry e) {
+    return e->is_struct;
+}
+
+/**
  * It checks if the name is in the symbol table.
  *
  * @param symtab The symbol table to search in.
@@ -140,4 +149,23 @@ bool isInSymbolTable(List symtab, const char *name) {
     symtabEntryDestroy(found_entry);
 
     return res;
+}
+
+bool isStructInSymbolTable(List symtab, const char *name) {
+    bool res;
+    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, true, 0, SYMBOL_DATA);
+    SymtabEntry found_entry;
+    if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_SUCCESS) {
+        res = symtabEntryIsStruct(found_entry);
+    } else {
+        res = false;
+    }
+    symtabEntryDestroy(dummy_entry);
+    symtabEntryDestroy(found_entry);
+
+    return res;
+}
+
+void symtabEntrySetValue(SymtabEntry e, int value) {
+    e->value = value;
 }

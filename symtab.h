@@ -33,6 +33,12 @@ int symtabEntryGetLineNum(SymtabEntry e);
 
 SymbolType symtabEntryGetType(SymtabEntry e);
 
+bool symtabEntryIsStruct(SymtabEntry e);
+
+void symtabEntrySetValue(SymtabEntry e, int value);
+
 bool isInSymbolTable(List symtab, const char *name);
+
+bool isStructInSymbolTable(List symtab, const char *name);
 
 #endif //ASSEMBLER_SYMTAB_H

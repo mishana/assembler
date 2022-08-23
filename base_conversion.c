@@ -12,6 +12,8 @@
 // Constants and MACROs
 #define BASE32 32
 
+#define CHK(_n) ((_n) <= sz)
+
 
 char BASE32_DIGITS[] = {'!', '@', '#', '$', '%', '^', '&', '*', '<', '>',
                         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
@@ -91,36 +93,71 @@ int binaryToDecimal(const char *binary) {
     return decimal;
 }
 
-/**
- * It converts a decimal number to a binary string of 1's and 0's.
- *
- * @param decimal The decimal number to convert to binary.
- * @param binary The binary string that will be returned.
- */
-void decimalToBinary(int decimal, char *binary, int min_num_bits) {
-    int num_bits = (int) ceil(log2(decimal));
-    num_bits = min_num_bits > num_bits ? min_num_bits : num_bits;
-    /* Checking that the number of bits is less than or equal to 10. */
-    assert(num_bits <= BINARY_WORD_SIZE);
-//    char* binary = (char*)malloc(sizeof(char) * (num_bits + 1));
+///**
+// * It converts a decimal number to a binary string of 1's and 0's.
+// *
+// * @param decimal The decimal number to convert to binary.
+// * @param binary The binary string that will be returned.
+// */
+//void decimalToBinary(int decimal, char *binary, int min_num_bits) {
+//    int num_bits = (int) ceil(log2(decimal));
+//    num_bits = min_num_bits > num_bits ? min_num_bits : num_bits;
+//    /* Checking that the number of bits is less than or equal to 10. */
+//    assert(num_bits <= BINARY_WORD_SIZE);
+////    char* binary = (char*)malloc(sizeof(char) * (num_bits + 1));
+////
+////    if (binary == NULL)
+////        memoryAllocationError();
 //
-//    if (binary == NULL)
-//        memoryAllocationError();
+//    /* Calculating the weight of the most significant bit. */
+//    int bit_weight = (int) pow(2, num_bits - 1);
+//    for (int i = 0; i < num_bits; ++i) {
+//        /* It checks if the bit is 1 or 0. */
+//        if (decimal / bit_weight >= 1) {
+//            binary[i] = '1';
+//            decimal -= bit_weight;
+//        } else {
+//            binary[i] = '0';
+//        }
+//
+//        bit_weight /= 2;
+//    }
+//    /* Adding a null character to indicate the end of the actual binary string. */
+//    binary[num_bits] = '\0';
+//}
 
-    /* Calculating the weight of the most significant bit. */
-    int bit_weight = (int) pow(2, num_bits - 1);
-    for (int i = 0; i < num_bits; ++i) {
-        /* It checks if the bit is 1 or 0. */
-        if (decimal / bit_weight >= 1) {
-            binary[i] = '1';
-            decimal -= bit_weight;
-        } else {
-            binary[i] = '0';
-        }
+/**
+ * Convert a decimal number to a binary string.
+ *
+ * @param p_val The decimal value to convert to binary.
+ * @param buf The buffer to store the binary string in.
+ * @param sz The size of the buffer.
+ */
+char *decimalToBinary(int p_val, char *buf, size_t sz) {
+    assert(CHK(2)); /* at least two bytes of buffer space */
+    buf += sz; /* we start from the end, backwards to avoid having to use
+                * one bit masks moving all the time around */
+    *--buf = '\0'; /* this is the last '\0' that should end the string */
+    sz--; /* update buffer size */
 
-        bit_weight /= 2;
+    /* we operate better with unsigned, as the
+     * sign doesn't get involved in shifts (we are reinterpreting
+     * the sign bit as a normal bit, which makes the assumption that
+     * integers are stored in two's complement.  This is essentially
+     * nonportable code, but it will work in the stated assumptions. */
+    unsigned val = (unsigned) p_val;
+
+    /* the first below is the second char we check
+     * above */
+    do {
+        *--buf = val & 1 ? '1' : '0';
+        sz--;
+        val >>= 1;
+    } while (CHK(1) && val);
+    while(sz) {
+        *--buf = '0';
+        sz--;
     }
-    /* Adding a null character to indicate the end of the actual binary string. */
-    binary[num_bits] = '\0';
+    return buf; /* return what we have */
 }
 

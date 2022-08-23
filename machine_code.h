@@ -18,4 +18,6 @@ MachineCode machineCodeCopy(MachineCode mc);
 
 void machineCodeDestroy(MachineCode mc);
 
+size_t machineCodeGetSize(MachineCode mc);
+
 #endif //ASSEMBLER_MACHINE_CODE_H

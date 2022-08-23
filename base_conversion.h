@@ -14,6 +14,6 @@ void decimalToBase32Word(int decimal, char *base32_word);
 
 int binaryToDecimal(const char *binary);
 
-void decimalToBinary(int decimal, char *binary, int min_num_bits);
-
+//void decimalToBinary(int decimal, char *binary, int min_num_bits);
+char *decimalToBinary(int p_val, char *buf, size_t sz);
 #endif //ASSEMBLER_BASE_CONVERSION_H

@@ -296,33 +296,33 @@ const List statementGetTokens(Statement s) {
  *
  * @param s The statement to check.
  */
-static bool labelCheckSyntax(Statement s) {
+static bool labelCheckSyntax(Statement s, const char *filename, const char *filename_suffix) {
     assert(s->label != NULL);
 
     if (strlen(s->label) > LABEL_MAX_LENGTH) {
-        printf("Label is too long on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Label is too long\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (!isalpha(s->label[0])) {
-        printf("Label must start with a letter on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Label must start with a letter\n", filename, filename_suffix, s->line_num);
         return false;
     }
     for (int i = 1; i < strlen(s->label); i++) {
         if (!isalnum(s->label[i])) {
-            printf("Label must contain only letters and digits on line %d\n", s->line_num);
+            printf("Error in %s.%s line %d: Label must contain only letters and digits\n", filename, filename_suffix, s->line_num);
             return false;
         }
     }
     if (s->type != DIRECTIVE && s->type != INSTRUCTION) {
-        printf("Label can only be used with directives and instructions on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Label can only be used with directives and instructions\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (s->type == DIRECTIVE && !isDataStoreDirective(s->mnemonic)) {
-        printf("Label can only be used with directives data, struct and string on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Label can only be used with directives data, struct and string\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (isDirective(s->label) || isInstruction(s->label)) {
-        printf("Label can not be an instruction or directive on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Label can not be an instruction or directive\n", filename, filename_suffix, s->line_num);
         return false;
     }
     return true;
@@ -333,68 +333,68 @@ static bool labelCheckSyntax(Statement s) {
  *
  * @param s The statement to check.
  */
-static bool macroCheckSyntax(Statement s) {
+static bool macroCheckSyntax(Statement s, const char *filename, const char *filename_suffix) {
     assert(s->type == MACRO_START);
 
     if (s->label != NULL) {
-        printf("Macro can not have a label on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Macro can not have a label\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (listLength(s->operands) != 1) {
-        printf("Macro start statement must have exactly one argument on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Macro start statement must have exactly one argument\n", filename, filename_suffix, s->line_num);
         return false;
     }
     const char *macro_name = listGetDataAt(s->operands, 0);
     if (isDirective(macro_name) || isInstruction(macro_name)) {
-        printf("Macro name can't be an instruction or a directive! on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Macro name can't be an instruction or a directive!\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (strlen(macro_name) > LABEL_MAX_LENGTH) {
-        printf("Macro name is too long on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Macro name is too long\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (!isalpha(macro_name[0])) {
-        printf("Macro name must start with a letter on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Macro name must start with a letter\n", filename, filename_suffix, s->line_num);
         return false;
     }
     for (int i = 1; i < strlen(macro_name); i++) {
         if (!isalnum(macro_name[i])) {
-            printf("Macro name must contain only letters and digits on line %d\n", s->line_num);
+            printf("Error in %s.%s line %d: Macro name must contain only letters and digits\n", filename, filename_suffix, s->line_num);
             return false;
         }
     }
     return true;
 }
 
-static bool delimiterCheckSyntax(Statement s) {
+static bool delimiterCheckSyntax(Statement s, const char *filename, const char *filename_suffix) {
     // TODO: implement this
 }
 
-bool statementCheckSyntax(Statement s) {
+bool statementCheckSyntax(Statement s, const char *filename, const char *filename_suffix) {
     if (!s) {
         return false;
     }
 
     if (s->type == OTHER) {
-        printf("Undefined statement on line %d\n", s->line_num);
+        printf("Error in %s.%s line %d: Undefined statement\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (s->type == COMMENT || s->type == EMPTY_LINE) {
         return true;
     }
 
-    bool valid = delimiterCheckSyntax(s);
+    bool valid = delimiterCheckSyntax(s, filename, filename_suffix);
 
     if (s->type == MACRO_START) {
-        return valid && macroCheckSyntax(s);
+        return valid && macroCheckSyntax(s, filename, filename_suffix);
     } else if (s->type == MACRO_END) {
         if (listLength(s->operands) != 0) {
-            printf("Macro end statement must have no arguments on line %d\n", s->line_num);
+            printf("Error in %s.%s line %d: Macro end statement must have no arguments\n", filename, filename_suffix, s->line_num);
             return false;
         }
     } else {  // directive or instruction
         if (s->label) {
-            valid = valid && labelCheckSyntax(s);
+            valid = valid && labelCheckSyntax(s, filename, filename_suffix);
         }
         // TODO: check mnemonic and operands syntax
     }

@@ -10,6 +10,7 @@
 #include "const_tables.h"
 #include "file_utils.h"
 #include "memmap.h"
+#include "machine_code.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -27,11 +28,9 @@
  * The function builds the symbol table.
  *
  * @param src_file The source file.
- * @param obj_file The file to write the object code to.
- * @param entries_file a file to write the entry symbols to.
- * @param external_file a file to write the external symbols to.
+ * @param filename The name of the source file.
  */
-List buildSymbolTable(FILE *src_file) {
+List buildSymbolTable(FILE *src_file, const char *filename, List machine_codes) {
     List symtab = listCreate((list_eq) symtabEntryCmp, (list_copy) symtabEntryCopy, (list_free) symtabEntryDestroy);
 
     size_t ic = 0, dc = 0;
@@ -44,7 +43,7 @@ List buildSymbolTable(FILE *src_file) {
     while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
         line_num++;
         Statement s = parse(line, line_num);
-        if (!s || !statementCheckSyntax(s)) {
+        if (!s || !statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX)) {
             success = false;
             continue;
         }
@@ -68,8 +67,8 @@ List buildSymbolTable(FILE *src_file) {
             SymtabEntry found_entry;
             if (listFind(symtab, entry, (void **) &found_entry) == LIST_SUCCESS) {
                 success = false;
-                printf("Error: duplicate label '%s' on line %d. Was previously defined on line %d\n",
-                       statementGetLabel(s), line_num, symtabEntryGetLineNum(found_entry));
+                printf("Error in %s.%s line %d: duplicate label '%s' was previously defined on line %d\n",
+                       filename, SOURCE_FILE_SUFFIX, line_num, statementGetLabel(s), symtabEntryGetLineNum(found_entry));
                 symtabEntryDestroy(found_entry);
             } else {
                 listAppend(symtab, entry);
@@ -82,6 +81,7 @@ List buildSymbolTable(FILE *src_file) {
         if (statementGetType(s) == DIRECTIVE) {
             const char *directive = statementGetMnemonic(s);
             if (is_label && isDataStoreDirective(directive)) {
+                // TODO: map the data in memory
                 dc += calcDirectiveDataSize(s);
             } else { // .extern or .entry
                 if (strcmp(directive, DIRECTIVE_EXTERN) == 0) {
@@ -94,8 +94,8 @@ List buildSymbolTable(FILE *src_file) {
                         SymtabEntry found_entry;
                         if (listFind(symtab, entry, (void **) &found_entry) == LIST_SUCCESS) {
                             success = false;
-                            printf("Error: duplicate extern label '%s' on line %d was previously defined on line %d\n",
-                                   extern_operand, line_num, symtabEntryGetLineNum(found_entry));
+                            printf("Error in %s.%s line %d: duplicate extern label '%s' was previously defined on line %d\n",
+                                   filename, SOURCE_FILE_SUFFIX, line_num, extern_operand, symtabEntryGetLineNum(found_entry));
                             symtabEntryDestroy(found_entry);
                         } else {
                             listAppend(symtab, entry);
@@ -105,14 +105,24 @@ List buildSymbolTable(FILE *src_file) {
                 }
             }
         } else { // INSTRUCTION
-
-            ic++;
+            MachineCode mc = machineCodeCreate(s, ic);
+            listAppend(machine_codes, mc);
+            ic += machineCodeGetSize(mc);
+            machineCodeDestroy(mc);
         }
     }
 
     if (!success) {
         listDestroy(symtab);
         return NULL;
+    }
+
+    /* Adding the IC to the data symbols addresses. */
+    for (int i = 0; i < listLength(symtab); i++) {
+        SymtabEntry entry = (SymtabEntry)listGetDataAt(symtab, i);
+        if (symtabEntryGetType(entry) == SYMBOL_DATA) {
+            symtabEntrySetValue(entry, symtabEntryGetValue(entry) + ic);
+        }
     }
     return symtab;
 }
@@ -126,7 +136,8 @@ List buildSymbolTable(FILE *src_file) {
 List run_first_pass(const char *filename) {
     FILE *src_file = openFileWithSuffix(filename, "r", SOURCE_FILE_SUFFIX);
     /* Building the symbol table. */
-    List symtab = buildSymbolTable(src_file);
+    List machine_codes = listCreate((list_eq) machineCodeCmp, (list_copy) machineCodeCopy, (list_free) machineCodeDestroy);
+    List symtab = buildSymbolTable(src_file, filename, machine_codes);
     fclose(src_file);
 
     return symtab;
