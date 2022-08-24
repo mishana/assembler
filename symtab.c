@@ -166,6 +166,27 @@ bool isStructInSymbolTable(List symtab, const char *name) {
     return res;
 }
 
+/**
+ *
+ *
+ * @param e The symbol table entry to set the value of.
+ * @param value the value to set the entry to
+ */
 void symtabEntrySetValue(SymtabEntry e, int value) {
     e->value = value;
+}
+
+int symbolTableGetAddress(List symtab, const char *name) {
+    // This is a hack to get the address of a symbol.
+    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, false, 0, SYMBOL_DATA);
+    SymtabEntry found_entry;
+    int res;
+    if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_SUCCESS) {
+        res = found_entry->value;
+    } else {
+        res = SYMBOL_ADDRESS_NOT_FOUND;
+    }
+    symtabEntryDestroy(dummy_entry);
+    symtabEntryDestroy(found_entry);
+    return res;
 }

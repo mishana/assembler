@@ -22,65 +22,17 @@ char BASE32_DIGITS[] = {'!', '@', '#', '$', '%', '^', '&', '*', '<', '>',
 
 
 /**
- * It converts a base32 digit to a decimal number.
- *
- * @param base32_digit The base32 digit to convert to decimal.
- */
-int base32DigitToDecimal(char base32_digit) {
-    for (int i = 0; i < BASE32; ++i) {
-        if (BASE32_DIGITS[i] == base32_digit)
-            return i;
-    }
-
-    /* A function that prints an error message and exits the program. */
-    errorWithMsg("Bad Base32 Digit ERROR!");
-    return -1; // just to avoid compiler warnings
-}
-
-/**
- * Convert a base32 word to a decimal number.
- *
- * @param base32_word The base32 word to convert to decimal.
- */
-int base32WordToDecimal(const char *base32_word) {
-    // We assume a 2-digit base32 word
-    assert(strlen(base32_word) == BASE32_WORD_SIZE);
-
-    return base32DigitToDecimal(base32_word[0]) * BASE32 +
-           base32DigitToDecimal(base32_word[1]);
-}
-
-/**
- * It converts a decimal number to a base32 word.
- *
- * @param decimal the decimal number to convert
- * @param base32_word The base32 word that will be returned.
- */
-void decimalToBase32Word(int decimal, char *base32_word) {
-    // We assume a 2-digit base32 word
-    assert(decimal < (int) pow(BASE32, BASE32_WORD_SIZE));
-
-//    char* base32_word = (char*)malloc(sizeof(char) * (BASE32_WORD_SIZE + 1));
-//    if (base32_word == NULL)
-//        memoryAllocationError();
-
-    base32_word[0] = BASE32_DIGITS[(int) (decimal / BASE32)];
-    base32_word[1] = BASE32_DIGITS[(int) (decimal % BASE32)];
-    base32_word[2] = '\0';
-}
-
-/**
  * Converts a binary string to a decimal integer.
  *
  * @param binary A string of 1's and 0's
  */
-int binaryToDecimal(const char *binary) {
-    size_t binary_len = strlen(binary);
+int binaryToDecimal(const char *binary, size_t num_bits) {
+    assert(num_bits <= strlen(binary));
     int decimal = 0;
 
     /* Calculating the weight of the most significant bit. */
-    int bit_weight = (int) pow(2, binary_len - 1);
-    for (size_t i = 0; i < binary_len; ++i) {
+    int bit_weight = (int) pow(2, num_bits - 1);
+    for (size_t i = 0; i < num_bits; ++i) {
         assert(binary[i] == '0' || binary[i] == '1');
 
         /* It converts the character '0' or '1' to the integer 0 or 1. */
@@ -93,39 +45,6 @@ int binaryToDecimal(const char *binary) {
     return decimal;
 }
 
-///**
-// * It converts a decimal number to a binary string of 1's and 0's.
-// *
-// * @param decimal The decimal number to convert to binary.
-// * @param binary The binary string that will be returned.
-// */
-//void decimalToBinary(int decimal, char *binary, int min_num_bits) {
-//    int num_bits = (int) ceil(log2(decimal));
-//    num_bits = min_num_bits > num_bits ? min_num_bits : num_bits;
-//    /* Checking that the number of bits is less than or equal to 10. */
-//    assert(num_bits <= BINARY_WORD_SIZE);
-////    char* binary = (char*)malloc(sizeof(char) * (num_bits + 1));
-////
-////    if (binary == NULL)
-////        memoryAllocationError();
-//
-//    /* Calculating the weight of the most significant bit. */
-//    int bit_weight = (int) pow(2, num_bits - 1);
-//    for (int i = 0; i < num_bits; ++i) {
-//        /* It checks if the bit is 1 or 0. */
-//        if (decimal / bit_weight >= 1) {
-//            binary[i] = '1';
-//            decimal -= bit_weight;
-//        } else {
-//            binary[i] = '0';
-//        }
-//
-//        bit_weight /= 2;
-//    }
-//    /* Adding a null character to indicate the end of the actual binary string. */
-//    binary[num_bits] = '\0';
-//}
-
 /**
  * Convert a decimal number to a binary string.
  *
@@ -133,7 +52,8 @@ int binaryToDecimal(const char *binary) {
  * @param buf The buffer to store the binary string in.
  * @param sz The size of the buffer.
  */
-char *decimalToBinary(int p_val, char *buf, size_t sz) {
+char *decimalToBinary(int p_val, char *buf, size_t num_bits) {
+    size_t sz = num_bits + 1;
     assert(CHK(2)); /* at least two bytes of buffer space */
     buf += sz; /* we start from the end, backwards to avoid having to use
                 * one bit masks moving all the time around */
@@ -159,5 +79,22 @@ char *decimalToBinary(int p_val, char *buf, size_t sz) {
         sz--;
     }
     return buf; /* return what we have */
+}
+
+/**
+ * Convert a binary word to a base32 word.
+ *
+ * @param binary_word a pointer to a string of binary digits (0's and 1's)
+ * @param base32_word The base32 word to be returned.
+ */
+char *binaryToBase32Word(const char *binary_word, char *base32_word) {
+    int msb_half = binaryToDecimal(binary_word, BINARY_WORD_SIZE / 2);
+    int lsb_half = binaryToDecimal(binary_word + BINARY_WORD_SIZE / 2, BINARY_WORD_SIZE / 2);
+
+    base32_word[0] = BASE32_DIGITS[msb_half];
+    base32_word[1] = BASE32_DIGITS[lsb_half];
+    base32_word[2] = '\0';
+
+    return base32_word;
 }
 

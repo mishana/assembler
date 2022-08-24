@@ -23,13 +23,18 @@ int main(int argc, char **argv) {
         }
 
         printf("Run first-pass for %s\n", file_to_compile);
-        List symtab = run_first_pass(file_to_compile);
-        if (!symtab) {
-            errorWithMsg("First-pass failed. exiting");
+        List symtab, machine_codes, memory_codes;
+        bool res = run_first_pass(file_to_compile, &symtab, &machine_codes, &memory_codes);
+        if (!res) {
+            printf("First-pass for %s failed. skipping second-pass\n", file_to_compile);
+            listDestroy(symtab);
+            listDestroy(machine_codes);
+            listDestroy(memory_codes);
+            continue;
         }
 
         printf("Run second-pass for %s\n", file_to_compile);
-        run_second_pass(file_to_compile, symtab);
+        run_second_pass(file_to_compile, symtab, machine_codes, memory_codes);
         printf("=============================================================");
     }
 

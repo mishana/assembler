@@ -8,12 +8,10 @@
 #define BASE32_WORD_SIZE 2
 #define BINARY_WORD_SIZE 10
 
-int base32WordToDecimal(const char *base32_word);
+int binaryToDecimal(const char *binary, size_t num_bits);
 
-void decimalToBase32Word(int decimal, char *base32_word);
+char *decimalToBinary(int p_val, char *buf, size_t num_bits);
 
-int binaryToDecimal(const char *binary);
+char *binaryToBase32Word(const char *binary, char *base32_word);
 
-//void decimalToBinary(int decimal, char *binary, int min_num_bits);
-char *decimalToBinary(int p_val, char *buf, size_t sz);
 #endif //ASSEMBLER_BASE_CONVERSION_H

@@ -7,7 +7,7 @@
 
 #include "parser.h"
 
-typedef struct operand_t *Operand;
+
 typedef struct machine_code_t *MachineCode;
 
 MachineCode machineCodeCreate(Statement s, int ic);
@@ -19,5 +19,9 @@ MachineCode machineCodeCopy(MachineCode mc);
 void machineCodeDestroy(MachineCode mc);
 
 size_t machineCodeGetSize(MachineCode mc);
+
+void machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filename_suffix, const char *filename);
+
+void machineCodeToObjFile(MachineCode mc, FILE *f);
 
 #endif //ASSEMBLER_MACHINE_CODE_H

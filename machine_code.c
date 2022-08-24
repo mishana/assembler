@@ -5,14 +5,24 @@
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include "machine_code.h"
 #include "linkedlist.h"
 #include "parser.h"
 #include "errors.h"
 #include "const_tables.h"
 #include "str_utils.h"
+#include "symtab.h"
+#include "base_conversion.h"
 
 #define MAX_OPERANDS_COUNT 2
+
+#define OPCODE_NUM_BITS 4
+#define ADDRESSING_NUM_BITS 2
+#define CODING_METHOD_NUM_BITS 2
+
+#define REGISTER_NUM_BITS 4
+
 
 struct machine_code_t {
     int line_num;
@@ -30,10 +40,17 @@ struct machine_code_t {
 
     int label_addresses[MAX_OPERANDS_COUNT]; // 0-255
 
+    char *labels[MAX_OPERANDS_COUNT];
+
     int struct_addresses[MAX_OPERANDS_COUNT]; // 0-255
     int struct_field_nums[MAX_OPERANDS_COUNT]; // 1/2
 
+    char *struct_names[MAX_OPERANDS_COUNT];
+
+    int num_operands; // 0/1/2
+
     size_t size;
+    char **words;
 };
 
 
@@ -48,27 +65,42 @@ MachineCode machineCodeCreate(Statement s, int ic) {
     mc->opcode = getInstructionCode(statementGetMnemonic(s));
     mc->size = 1; // opcode word
 
+    /* It's initializing the fields of the struct. */
+    for (int i = 0; i < MAX_OPERANDS_COUNT; ++i) {
+        mc->addressing_modes[i] = EMPTY_ADDRESSING;
+        mc->values[i] = 0;
+        mc->registers[i] = 0;
+        mc->label_addresses[i] = 0;
+        mc->struct_addresses[i] = 0;
+        mc->struct_field_nums[i] = 0;
+        mc->struct_names[i] = NULL;
+        mc->labels[i] = NULL;
+    }
+    mc->words = NULL;
+
     List instruction_operands = statementGetOperands(s);
     int num_operands = listLength(instruction_operands);
     assert(num_operands == getInstructionNumberOfOperands(statementGetMnemonic(s)));
 
-    mc->addressing_modes[0] = EMPTY_ADDRESSING;
-    mc->addressing_modes[1] = EMPTY_ADDRESSING;
+    mc->num_operands = num_operands;
 
     for (int i = 0; i < num_operands; ++i) {
         mc->size++; // operand value/address word
 
         /* It's iterating over the operands in reverse order. first dest then src. */
-        const char *operand = listGetDataAt(instruction_operands, 1 - i);
+        const char *operand = listGetDataAt(instruction_operands, i);
 
         AddressingMode addressing_mode = getAddressingMode(operand);
         mc->addressing_modes[i] = addressing_mode;
 
         if (addressing_mode == IMMEDIATE_ADDRESSING) {
-            mc->values[i] = atoi(operand + 1);
+            mc->values[i] = atoi(operand + 1); // +1 to skip the '#'
         } else if (addressing_mode == REGISTER_ADDRESSING) {
-            mc->registers[i] = atoi(operand + 1);
+            mc->registers[i] = atoi(operand + 1); // +1 to skip the 'r'
+        } else if (addressing_mode == DIRECT_ADDRESSING) {
+            mc->labels[i] = strdup(operand);
         } else if (addressing_mode == STRUCT_ADDRESSING) {
+            mc->struct_names[i] = strdup(operand);
             mc->size++; // struct field num word
 
             List split_operand = strSplit(operand, ".");
@@ -77,6 +109,9 @@ MachineCode machineCodeCreate(Statement s, int ic) {
             mc->struct_field_nums[i] = atoi(after_delim);
         }
     }
+
+    // TODO: mc->codings_method
+
     return mc;
 }
 
@@ -89,11 +124,43 @@ MachineCode machineCodeCopy(MachineCode mc) {
     if (!copy) {
         memoryAllocationError();
     }
-    memcpy(copy, mc, sizeof(*copy));
+    copy->line_num = mc->line_num;
+    copy->address = mc->address;
+    copy->opcode = mc->opcode;
+    copy->coding_method = mc->coding_method;
+    copy->num_operands = mc->num_operands;
+    copy->size = mc->size;
+    copy->words = malloc(sizeof(char *) * copy->size);
+    if (!copy->words) {
+        memoryAllocationError();
+    }
+    for (int i = 0; i < copy->size; ++i) {
+        copy->words[i] = strdup(mc->words[i]);
+    }
+    for (int i = 0; i < copy->num_operands; ++i) {
+        copy->addressing_modes[i] = mc->addressing_modes[i];
+        copy->values[i] = mc->values[i];
+        copy->registers[i] = mc->registers[i];
+        copy->label_addresses[i] = mc->label_addresses[i];
+        copy->struct_addresses[i] = mc->struct_addresses[i];
+        copy->struct_field_nums[i] = mc->struct_field_nums[i];
+        copy->struct_names[i] = strdup(mc->struct_names[i]);
+        copy->labels[i] = strdup(mc->labels[i]);
+    }
     return copy;
 }
 
 void machineCodeDestroy(MachineCode mc) {
+    if (mc->words) {
+        for (int i = 0; i < mc->size; ++i) {
+            free(mc->words[i]);
+        }
+        free(mc->words);
+    }
+    for (int i = 0; i < MAX_OPERANDS_COUNT; ++i) {
+        free(mc->labels[i]);
+        free(mc->struct_names[i]);
+    }
     free(mc);
 }
 
@@ -101,5 +168,86 @@ size_t machineCodeGetSize(MachineCode mc) {
     return mc->size;
 }
 
+static void
+updateAndCheckSymbolAddresses(MachineCode mc, List symtab, const char *filename, const char *filename_suffix) {
+    for (int i = 0; i < mc->num_operands; ++i) {
+        if (mc->addressing_modes[i] == DIRECT_ADDRESSING) {
+            mc->label_addresses[i] = symbolTableGetAddress(symtab, mc->labels[i]);
+            if (mc->label_addresses[i] == SYMBOL_ADDRESS_NOT_FOUND) {
+                printf("Undefined symbol %s on line %d in file %s%s\n", mc->labels[i], mc->line_num, filename,
+                       filename_suffix);
+            }
+        } else if (mc->addressing_modes[i] == STRUCT_ADDRESSING) {
+            mc->struct_addresses[i] = symbolTableGetAddress(symtab, mc->struct_names[i]);
+            if (mc->struct_addresses[i] == SYMBOL_ADDRESS_NOT_FOUND) {
+                printf("Undefined symbol %s on line %d in file %s%s\n", mc->struct_names[i], mc->line_num, filename,
+                       filename_suffix);
+            }
+        }
+    }
+}
 
+/**
+ * It converts the machine code to base 32 words.
+ *
+ * @param mc a list of machine code instructions
+ * @param symtab a list of symbols (strings)
+ */
+void machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filename_suffix, const char *filename) {
+    updateAndCheckSymbolAddresses(mc, symtab, filename, filename_suffix);
+
+    char **words = malloc(sizeof(*words) * mc->size);
+    if (!words) {
+        memoryAllocationError();
+    }
+    for (int i = 0; i < mc->size; ++i) {
+        words[i] = malloc(sizeof(char) * (BASE32_WORD_SIZE + 1));
+        if (!words[i]) {
+            memoryAllocationError();
+        }
+    }
+    mc->words = words;
+
+    char binary_buf[BINARY_WORD_SIZE + 1];
+    // opcode word
+    decimalToBinary(mc->opcode, binary_buf, OPCODE_NUM_BITS);
+    decimalToBinary(mc->addressing_modes[0], binary_buf + OPCODE_NUM_BITS,
+                    ADDRESSING_NUM_BITS);
+    decimalToBinary(mc->addressing_modes[1], binary_buf + OPCODE_NUM_BITS,
+                    2 * ADDRESSING_NUM_BITS);
+    decimalToBinary(mc->coding_method, binary_buf + OPCODE_NUM_BITS, CODING_METHOD_NUM_BITS);
+    binaryToBase32Word(binary_buf, words[0]);
+
+    // operand value/address word(s)
+    if (mc->addressing_modes[0] == REGISTER_ADDRESSING && mc->addressing_modes[1] == REGISTER_ADDRESSING) {
+        decimalToBinary(mc->registers[0], binary_buf, REGISTER_NUM_BITS);
+        decimalToBinary(mc->registers[1], binary_buf + REGISTER_NUM_BITS, REGISTER_NUM_BITS);
+        return;
+    }
+    decimalToBinary(0, binary_buf, BINARY_WORD_SIZE - 2); // 2 bits for addressing modes
+
+    int operand_word_index = 1;
+    for (int i = 0; i < mc->num_operands; ++i) {
+        if (mc->addressing_modes[i] == IMMEDIATE_ADDRESSING) {
+            decimalToBinary(mc->values[i], binary_buf, BINARY_WORD_SIZE - 2);
+            binaryToBase32Word(binary_buf, words[operand_word_index++]);
+        } else if (mc->addressing_modes[i] == REGISTER_ADDRESSING) {
+            decimalToBinary(mc->registers[i], binary_buf + i * REGISTER_NUM_BITS, REGISTER_NUM_BITS);
+            binaryToBase32Word(binary_buf, words[operand_word_index++]);
+        } else if (mc->addressing_modes[i] == DIRECT_ADDRESSING) {
+            decimalToBinary(mc->label_addresses[i], binary_buf, BINARY_WORD_SIZE - 2);
+            binaryToBase32Word(binary_buf, words[operand_word_index++]);
+        } else if (mc->addressing_modes[i] == STRUCT_ADDRESSING) {
+            decimalToBinary(mc->struct_addresses[i], binary_buf, BINARY_WORD_SIZE - 2);
+            binaryToBase32Word(binary_buf, words[operand_word_index++]);
+            decimalToBinary(mc->struct_field_nums[i], binary_buf, BINARY_WORD_SIZE - 2);
+            binaryToBase32Word(binary_buf, words[operand_word_index++]);
+        }
+    }
+    assert(operand_word_index == mc->size);
+}
+
+void machineCodeToObjFile(MachineCode mc, FILE *f) {
+    // TODO: implement
+}
 

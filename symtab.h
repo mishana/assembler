@@ -7,6 +7,8 @@
 
 #include "linkedlist.h"
 
+#define SYMBOL_ADDRESS_NOT_FOUND -1
+
 typedef enum SymbolType {
     SYMBOL_DATA,
     SYMBOL_CODE,
@@ -40,5 +42,7 @@ void symtabEntrySetValue(SymtabEntry e, int value);
 bool isInSymbolTable(List symtab, const char *name);
 
 bool isStructInSymbolTable(List symtab, const char *name);
+
+int symbolTableGetAddress(List symtab, const char *name);
 
 #endif //ASSEMBLER_SYMTAB_H

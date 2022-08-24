@@ -30,9 +30,7 @@
  * @param src_file The source file.
  * @param filename The name of the source file.
  */
-List buildSymbolTable(FILE *src_file, const char *filename, List machine_codes) {
-    List symtab = listCreate((list_eq) symtabEntryCmp, (list_copy) symtabEntryCopy, (list_free) symtabEntryDestroy);
-
+bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List machine_codes, List memory_codes) {
     size_t ic = 0, dc = 0;
     bool is_label = false;
 
@@ -81,8 +79,13 @@ List buildSymbolTable(FILE *src_file, const char *filename, List machine_codes) 
         if (statementGetType(s) == DIRECTIVE) {
             const char *directive = statementGetMnemonic(s);
             if (is_label && isDataStoreDirective(directive)) {
-                // TODO: map the data in memory
-                dc += calcDirectiveDataSize(s);
+                MemoryCode mem_c = memoryCodeCreate(s, dc);
+
+                listAppend(memory_codes, mem_c);
+                dc += memoryCodeGetSize(mem_c);
+
+                memoryCodeDestroy(mem_c);
+
             } else { // .extern or .entry
                 if (strcmp(directive, DIRECTIVE_EXTERN) == 0) {
                     List extern_operands = statementGetOperands(s);
@@ -106,15 +109,12 @@ List buildSymbolTable(FILE *src_file, const char *filename, List machine_codes) 
             }
         } else { // INSTRUCTION
             MachineCode mc = machineCodeCreate(s, ic);
+
             listAppend(machine_codes, mc);
             ic += machineCodeGetSize(mc);
+
             machineCodeDestroy(mc);
         }
-    }
-
-    if (!success) {
-        listDestroy(symtab);
-        return NULL;
     }
 
     /* Adding the IC to the data symbols addresses. */
@@ -124,7 +124,11 @@ List buildSymbolTable(FILE *src_file, const char *filename, List machine_codes) 
             symtabEntrySetValue(entry, symtabEntryGetValue(entry) + ic);
         }
     }
-    return symtab;
+    for (int i = 0; i < listLength(memory_codes); i++) {
+        MemoryCode mem_c = (MemoryCode)listGetDataAt(memory_codes, i);
+        memoryCodeSetStartAddress(mem_c, memoryCodeGetStartAddress(mem_c) + ic);
+    }
+    return success;
 }
 
 /**
@@ -133,12 +137,17 @@ List buildSymbolTable(FILE *src_file, const char *filename, List machine_codes) 
  * @param filename The name of the file to be read.
  * @return The built symbol table.
  */
-List run_first_pass(const char *filename) {
+bool run_first_pass(const char *filename, List *symtab_ptr, List *machine_codes_ptr, List *memory_codes_ptr) {
     FILE *src_file = openFileWithSuffix(filename, "r", SOURCE_FILE_SUFFIX);
-    /* Building the symbol table. */
-    List machine_codes = listCreate((list_eq) machineCodeCmp, (list_copy) machineCodeCopy, (list_free) machineCodeDestroy);
-    List symtab = buildSymbolTable(src_file, filename, machine_codes);
+
+    /* Building the symbol table and machine/memory codes. */
+    *symtab_ptr = listCreate((list_eq) symtabEntryCmp, (list_copy) symtabEntryCopy, (list_free) symtabEntryDestroy);
+    *machine_codes_ptr = listCreate((list_eq) machineCodeCmp, (list_copy) machineCodeCopy, (list_free) machineCodeDestroy);
+    *memory_codes_ptr = listCreate((list_eq) memoryCodeCmp, (list_copy) memoryCodeCopy, (list_free) memoryCodeDestroy);
+
+    bool res = run_first_pass_aux(src_file, filename, *symtab_ptr, *machine_codes_ptr, *memory_codes_ptr);
+
     fclose(src_file);
 
-    return symtab;
+    return res;
 }

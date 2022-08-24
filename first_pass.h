@@ -7,6 +7,6 @@
 
 #include "linkedlist.h"
 
-List run_first_pass(const char *filename);
+bool run_first_pass(const char *filename, List *symtab_ptr, List *machine_codes_ptr, List *memory_codes_ptr);
 
 #endif //ASSEMBLER_FIRST_PASS_H
