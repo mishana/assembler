@@ -16,10 +16,7 @@
 
 
 #define SOURCE_FILE_SUFFIX ".as"
-
-
-#define MAX_LINE_LEN 80 + 1
-
+#define VERY_LARGE_BUFFER_LEN 2048
 
 /**
  * It takes a source file and a destination file and copies the source file to the destination file, but it also replaces
@@ -42,8 +39,8 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
     int macro_def_line_num;
 
     int line_num = 0;
-    char line[MAX_LINE_LEN];
-    while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
+    char line[VERY_LARGE_BUFFER_LEN]; // we want to be able to copy the lines as is at this stage
+    while (fgets(line, VERY_LARGE_BUFFER_LEN, src_file) != NULL) {
         /* It's parsing the line. */
         line_num++;
         Statement s = parse(line, line_num);

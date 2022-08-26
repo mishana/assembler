@@ -197,3 +197,21 @@ char *strConcat(const char *s1, const char *s2) {
     }
     return result;
 }
+
+/**
+ * Counts the number of times a character appears in a string.
+ *
+ * @param s The string to search
+ * @param c The character to count
+ */
+int strCountChar(const char *s, char c) {
+    const char *p = s;
+    int count = 0;
+
+    do {
+        if (*p == c)
+            count++;
+    } while (*(p++));
+
+    return count;
+}

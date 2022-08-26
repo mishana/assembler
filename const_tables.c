@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include "const_tables.h"
 #include "str_utils.h"
+#include "types_utils.h"
 
 #define NOT_FOUND -1
 
@@ -24,38 +25,6 @@ const char *INSTRUCTIONS_ALL[] = {"mov", "cmp", "add", "sub",
                                   "prn", "jsr", "rts", "hlt"};
 const char *REGISTERS[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"};
 
-/**
- * It checks if the string is a number.
- *
- * @param str The string to check
- */
-static bool isNumeric(const char *str) {
-    int i = 0;
-    if (str[0] == '-' || str[0] == '+') {
-        i = 1;
-    }
-
-    for (; str[i] != '\0'; i++) {
-        if (!isdigit(str[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * It checks if the string contains only letters and digits.
- *
- * @param str The string to check
- */
-static bool isAlphaNumeric(const char *str) {
-    for (int i = 0; str[i] != '\0'; i++) {
-        if (!isalnum(str[i])) {
-            return false;
-        }
-    }
-    return true;
-}
 
 /**
  * It checks if the word is a reserved word.

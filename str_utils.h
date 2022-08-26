@@ -26,5 +26,6 @@ List strSplit(const char *s, const char *delim);
 
 char *strConcat(const char *s1, const char *s2);
 
+int strCountChar(const char *s, char c);
 
 #endif //ASSEMBLER_STR_UTILS_H

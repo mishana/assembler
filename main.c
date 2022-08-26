@@ -15,11 +15,11 @@ int main(int argc, char **argv) {
     }
 
     for (int i = 1; i < argc; ++i) {
-        printf("=============================================================\n");
+        printf("============================================================================================\n");
 
         const char *file_to_compile = argv[i];
 
-        printf("Run pre-assembly for %s\n", file_to_compile);
+        printf("1. Run pre-assembly for %s\n", file_to_compile);
         bool pre_assembly_res = run_pre_assembly(file_to_compile);
         if (!pre_assembly_res) {
             printf("Pre-assembly for %s failed. cleaning up and skipping first-pass", file_to_compile);
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
             printf("Pre-assembly for %s succeeded. %s%s file created\n", file_to_compile, file_to_compile, AFTER_MACRO_SUFFIX);
         }
 
-        printf("Run first-pass for %s\n", file_to_compile);
+        printf("2. Run first-pass for %s\n", file_to_compile);
         List symtab, machine_codes, memory_codes;
         bool first_pass_res = run_first_pass(file_to_compile, &symtab, &machine_codes, &memory_codes);
         if (!first_pass_res) {
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        printf("Run second-pass for %s\n", file_to_compile);
+        printf("3. Run second-pass for %s\n", file_to_compile);
         bool second_pass_res = run_second_pass(file_to_compile, symtab, machine_codes, memory_codes);
         if (!second_pass_res) {
             printf("Second-pass for %s failed. cleaning up artifacts..\n", file_to_compile);

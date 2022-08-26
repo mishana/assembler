@@ -5,7 +5,7 @@
 #include <string.h>
 #include <assert.h>
 #include <malloc.h>
-#include "memmap.h"
+#include "memory_code.h"
 #include "const_tables.h"
 #include "errors.h"
 #include "base_conversion.h"

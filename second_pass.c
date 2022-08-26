@@ -9,15 +9,13 @@
 #include "linkedlist.h"
 #include "file_utils.h"
 #include "machine_code.h"
-#include "memmap.h"
+#include "memory_code.h"
 #include "const_tables.h"
 #include "symtab.h"
 #include "base_conversion.h"
 
 #define SOURCE_FILE_SUFFIX ".am"
 #define START_ADDRESS_OFFSET 100
-
-#define MAX_LINE_LEN 2048
 
 
 /**
@@ -88,8 +86,8 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
     bool success = true;
 
     int line_num = 0;
-    char line[MAX_LINE_LEN];
-    while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
+    char line[LINE_BUFFER_LEN];
+    while (fgets(line, LINE_BUFFER_LEN, src_file) != NULL) {
         line_num++;
         Statement s = parse(line, line_num);
         if (statementGetType(s) == EMPTY_LINE || statementGetType(s) == COMMENT) {

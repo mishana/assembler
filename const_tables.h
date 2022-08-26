@@ -48,4 +48,10 @@ AddressingMode getAddressingMode(const char *operand);
 
 bool isReservedWord(const char *word);
 
+bool is0OperandInstruction(const char *instruction);
+
+bool is1OperandInstruction(const char *instruction);
+
+bool is2OperandInstruction(const char *instruction);
+
 #endif //ASSEMBLER_CONST_TABLES_H

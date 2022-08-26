@@ -2,8 +2,8 @@
 // Created by misha on 27/07/2022.
 //
 
-#ifndef ASSEMBLER_MEMMAP_H
-#define ASSEMBLER_MEMMAP_H
+#ifndef ASSEMBLER_MEMORY_CODE_H
+#define ASSEMBLER_MEMORY_CODE_H
 
 #include <stdio.h>
 #include "parser.h"
@@ -28,4 +28,4 @@ size_t calcDirectiveDataSize(Statement s);
 
 void memoryCodeToObjFile(MemoryCode mc, FILE *f, int start_address_offset);
 
-#endif //ASSEMBLER_MEMMAP_H
+#endif //ASSEMBLER_MEMORY_CODE_H

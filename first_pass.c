@@ -8,7 +8,7 @@
 #include "symtab.h"
 #include "const_tables.h"
 #include "file_utils.h"
-#include "memmap.h"
+#include "memory_code.h"
 #include "machine_code.h"
 
 #include <stdio.h>
@@ -16,8 +16,6 @@
 #include <assert.h>
 
 #define SOURCE_FILE_SUFFIX ".am"
-
-#define MAX_LINE_LEN 2048
 
 
 /**
@@ -33,8 +31,13 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
     bool success = true;
 
     int line_num = 0;
-    char line[MAX_LINE_LEN];
-    while (fgets(line, MAX_LINE_LEN, src_file) != NULL) {
+    char line[LINE_BUFFER_LEN];
+    while (fgets(line, LINE_BUFFER_LEN, src_file) != NULL) {
+        if (strlen(line) > MAX_LINE_LEN) {
+            success = false;
+            printf("Error in %s.%s line %d: line too long, exceeds 80 characters\n",
+                   filename, SOURCE_FILE_SUFFIX, line_num);
+        }
         line_num++;
         Statement s = parse(line, line_num);
         if (!s || !statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX)) {
