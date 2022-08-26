@@ -16,11 +16,8 @@
 #include <assert.h>
 
 #define SOURCE_FILE_SUFFIX ".am"
-#define OBJECT_FILE_SUFFIX ".ob"
-#define ENTRIES_FILE_SUFFIX ".ent"
-#define EXTERNAL_FILE_SUFFIX ".ext"
 
-#define MAX_LINE_LEN 80 + 1
+#define MAX_LINE_LEN 2048
 
 
 /**
@@ -67,7 +64,6 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
                 printf("Error in %s.%s line %d: duplicate label '%s' was previously defined on line %d\n",
                        filename, SOURCE_FILE_SUFFIX, line_num, statementGetLabel(s),
                        symtabEntryGetLineNum(found_entry));
-//                symtabEntryDestroy(found_entry);
             } else {
                 listAppend(symtab, entry);
             }
@@ -100,7 +96,6 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
                         printf("Error in %s.%s line %d: duplicate extern label '%s' was previously defined on line %d\n",
                                filename, SOURCE_FILE_SUFFIX, line_num, extern_operand,
                                symtabEntryGetLineNum(found_entry));
-//                        symtabEntryDestroy(found_entry);
                     } else {
                         listAppend(symtab, entry);
                     }

@@ -6,7 +6,6 @@
 #include <ctype.h>
 #include "const_tables.h"
 #include "str_utils.h"
-#include "symtab.h"
 
 #define NOT_FOUND -1
 
@@ -45,17 +44,41 @@ static bool isNumeric(const char *str) {
 }
 
 /**
- * It returns the code of the directive.
+ * It checks if the string contains only letters and digits.
  *
- * @param directive The directive to get the code for.
+ * @param str The string to check
  */
-int getDirectiveCode(const char *directive) {
-    for (int i = 0; i < DIRECTIVES_SIZE; i++) {
-        if (strcmp(directive, DIRECTIVES[i]) == 0) {
-            return i;
+static bool isAlphaNumeric(const char *str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!isalnum(str[i])) {
+            return false;
         }
     }
-    return NOT_FOUND;
+    return true;
+}
+
+/**
+ * It checks if the word is a reserved word.
+ *
+ * @param word The word to check
+ */
+bool isReservedWord(const char *word) {
+    for (int i = 0; i < DIRECTIVES_SIZE; i++) {
+        if (strcmp(word, DIRECTIVES[i] + 1) == 0) { // +1 to skip the '.'
+            return true;
+        }
+    }
+    for (int i = 0; i < INSTRUCTIONS_ALL_SIZE; i++) {
+        if (strcmp(word, INSTRUCTIONS_ALL[i]) == 0) {
+            return true;
+        }
+    }
+    for (int i = 0; i < REGISTERS_SIZE; i++) {
+        if (strcmp(word, REGISTERS[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -143,6 +166,8 @@ AddressingMode getAddressingMode(const char *operand) {
         return REGISTER_ADDRESSING;
     } else if (isdigit(operand[0])) {
         return INVALID_ADDRESSING;
+    } else if (isAlphaNumeric(operand)) {
+        return DIRECT_ADDRESSING;
     } else {
         List split_operand = strSplit(operand, ".");
         const char *before_delim = listGetDataAt(split_operand, 0);
@@ -150,10 +175,10 @@ AddressingMode getAddressingMode(const char *operand) {
 
         if (listLength(split_operand) == 2 && (strcmp(after_delim, "1") == 0 ||
                                                strcmp(after_delim, "2") == 0) &&
-            strlen(before_delim) > 1 && isalpha(before_delim[0])) {
+            strlen(before_delim) > 1 && isAlphaNumeric(before_delim)) {
             return STRUCT_ADDRESSING;
         } else {
-            return DIRECT_ADDRESSING;
+            return INVALID_ADDRESSING;
         }
     }
 }

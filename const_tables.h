@@ -13,6 +13,7 @@
 #define INSTRUCTIONS_1_OP_SIZE 9
 #define INSTRUCTIONS_0_OP_SIZE 2
 #define INSTRUCTIONS_ALL_SIZE INSTRUCTIONS_2_OP_SIZE + INSTRUCTIONS_1_OP_SIZE + INSTRUCTIONS_0_OP_SIZE
+#define REGISTERS_SIZE 8
 
 #define A 0
 #define E 1
@@ -38,15 +39,13 @@ extern const char *INSTRUCTIONS_2_OP[];
 extern const char *INSTRUCTIONS_1_OP[];
 extern const char *INSTRUCTIONS_0_OP[];
 extern const char *INSTRUCTIONS_ALL[];
-extern const char *REGISTERS[];
-
-
-int getDirectiveCode(const char *directive);
 
 int getInstructionCode(const char *instruction);
 
 int getInstructionNumberOfOperands(const char *instruction);
 
 AddressingMode getAddressingMode(const char *operand);
+
+bool isReservedWord(const char *word);
 
 #endif //ASSEMBLER_CONST_TABLES_H
