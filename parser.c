@@ -337,29 +337,29 @@ static bool macroCheckSyntax(Statement s, const char *filename, const char *file
     assert(s->type == MACRO_START);
 
     if (s->label != NULL) {
-        printf("Error in %s.%s line %d: Macro can not have a label\n", filename, filename_suffix, s->line_num);
+        printf("Error in %s%s line %d: Macro can not have a label\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (listLength(s->operands) != 1) {
-        printf("Error in %s.%s line %d: Macro start statement must have exactly one argument\n", filename, filename_suffix, s->line_num);
+        printf("Error in %s%s line %d: Macro start statement must have exactly one argument\n", filename, filename_suffix, s->line_num);
         return false;
     }
     const char *macro_name = listGetDataAt(s->operands, 0);
     if (isDirective(macro_name) || isInstruction(macro_name)) {
-        printf("Error in %s.%s line %d: Macro name can't be an instruction or a directive!\n", filename, filename_suffix, s->line_num);
+        printf("Error in %s%s line %d: Macro name can't be an instruction or a directive!\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (strlen(macro_name) > LABEL_MAX_LENGTH) {
-        printf("Error in %s.%s line %d: Macro name is too long\n", filename, filename_suffix, s->line_num);
+        printf("Error in %s%s line %d: Macro name is too long\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (!isalpha(macro_name[0])) {
-        printf("Error in %s.%s line %d: Macro name must start with a letter\n", filename, filename_suffix, s->line_num);
+        printf("Error in %s%s line %d: Macro name must start with a letter\n", filename, filename_suffix, s->line_num);
         return false;
     }
     for (int i = 1; i < strlen(macro_name); i++) {
         if (!isalnum(macro_name[i])) {
-            printf("Error in %s.%s line %d: Macro name must contain only letters and digits\n", filename, filename_suffix, s->line_num);
+            printf("Error in %s%s line %d: Macro name must contain only letters and digits\n", filename, filename_suffix, s->line_num);
             return false;
         }
     }
@@ -368,15 +368,23 @@ static bool macroCheckSyntax(Statement s, const char *filename, const char *file
 
 static bool delimiterCheckSyntax(Statement s, const char *filename, const char *filename_suffix) {
     // TODO: implement this
+    return true;
 }
 
+/**
+ * It checks the syntax of the statement.
+ *
+ * @param s The statement to check.
+ * @param filename the name of the file being checked
+ * @param filename_suffix The suffix of the file name. For example, if the file name is "test.c", the suffix is ".c".
+ */
 bool statementCheckSyntax(Statement s, const char *filename, const char *filename_suffix) {
     if (!s) {
         return false;
     }
 
     if (s->type == OTHER) {
-        printf("Error in %s.%s line %d: Undefined statement\n", filename, filename_suffix, s->line_num);
+        printf("Error in %s%s line %d: Undefined statement\n", filename, filename_suffix, s->line_num);
         return false;
     }
     if (s->type == COMMENT || s->type == EMPTY_LINE) {
@@ -389,7 +397,7 @@ bool statementCheckSyntax(Statement s, const char *filename, const char *filenam
         return valid && macroCheckSyntax(s, filename, filename_suffix);
     } else if (s->type == MACRO_END) {
         if (listLength(s->operands) != 0) {
-            printf("Error in %s.%s line %d: Macro end statement must have no arguments\n", filename, filename_suffix, s->line_num);
+            printf("Error in %s%s line %d: Macro end statement must have no arguments\n", filename, filename_suffix, s->line_num);
             return false;
         }
     } else {  // directive or instruction

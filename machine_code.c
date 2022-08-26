@@ -104,16 +104,21 @@ MachineCode machineCodeCreate(Statement s, int ic) {
         } else if (addressing_mode == DIRECT_ADDRESSING) {
             mc->labels[i] = strdup(operand);
         } else if (addressing_mode == STRUCT_ADDRESSING) {
-            mc->struct_names[i] = strdup(operand);
-            mc->size++; // struct field num word
-
             List split_operand = strSplit(operand, ".");
+            const char *before_delim = listGetDataAt(split_operand, 0);
             const char *after_delim = listGetDataAt(split_operand, 1);
+
+            mc->struct_names[i] = strdup(before_delim);
+            mc->size++; // struct field num word
 
             mc->struct_field_nums[i] = atoi(after_delim);
         }
         mc->is_extern[i] = false;
         mc->extern_words_index[i] = 0;
+    }
+
+    if (mc->addressing_modes[0] == mc->addressing_modes[1] && mc->addressing_modes[0] == REGISTER_ADDRESSING) {
+        mc->size--; // remove the second operand word
     }
 
     return mc;
@@ -134,13 +139,19 @@ MachineCode machineCodeCopy(MachineCode mc) {
     copy->coding_method = mc->coding_method;
     copy->num_operands = mc->num_operands;
     copy->size = mc->size;
-    copy->words = malloc(sizeof(char *) * copy->size);
-    if (!copy->words) {
-        memoryAllocationError();
+
+    if (mc->words) {
+        copy->words = malloc(sizeof(char *) * mc->size);
+        if (!copy->words) {
+            memoryAllocationError();
+        }
+        for (int i = 0; i < mc->size; ++i) {
+            copy->words[i] = strdup(mc->words[i]);
+        }
+    } else {
+        copy->words = NULL;
     }
-    for (int i = 0; i < copy->size; ++i) {
-        copy->words[i] = strdup(mc->words[i]);
-    }
+
     for (int i = 0; i < copy->num_operands; ++i) {
         copy->addressing_modes[i] = mc->addressing_modes[i];
         copy->values[i] = mc->values[i];
@@ -152,6 +163,7 @@ MachineCode machineCodeCopy(MachineCode mc) {
         copy->labels[i] = strdup(mc->labels[i]);
         copy->is_extern[i] = mc->is_extern[i];
         copy->extern_words_index[i] = mc->extern_words_index[i];
+        copy->operands[i] = strdup(mc->operands[i]);
     }
     return copy;
 }
@@ -163,7 +175,7 @@ void machineCodeDestroy(MachineCode mc) {
         }
         free(mc->words);
     }
-    for (int i = 0; i < MAX_OPERANDS_COUNT; ++i) {
+    for (int i = 0; i < mc->num_operands; ++i) {
         free((void *) mc->labels[i]);
         free((void *) mc->struct_names[i]);
         free((void *) mc->operands[i]);
@@ -231,12 +243,22 @@ bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filena
     mc->words = words;
 
     char binary_buf[BINARY_WORD_SIZE + 1];
+
     // opcode word
     decimalToBinary(mc->opcode, binary_buf, OPCODE_NUM_BITS);
-    decimalToBinary(mc->addressing_modes[0], binary_buf + OPCODE_NUM_BITS,
-                    ADDRESSING_NUM_BITS);
-    decimalToBinary(mc->addressing_modes[1], binary_buf + OPCODE_NUM_BITS + ADDRESSING_NUM_BITS,
-                    ADDRESSING_NUM_BITS);
+    if (mc->num_operands == 0) {
+        decimalToBinary(0, binary_buf + OPCODE_NUM_BITS, ADDRESSING_NUM_BITS);
+        decimalToBinary(0, binary_buf + OPCODE_NUM_BITS + ADDRESSING_NUM_BITS, ADDRESSING_NUM_BITS);
+    } else if (mc->num_operands == 1) {
+        decimalToBinary(0, binary_buf + OPCODE_NUM_BITS, ADDRESSING_NUM_BITS);
+        decimalToBinary(mc->addressing_modes[0], binary_buf + OPCODE_NUM_BITS + ADDRESSING_NUM_BITS,
+                        ADDRESSING_NUM_BITS);
+    } else {
+        decimalToBinary(mc->addressing_modes[0], binary_buf + OPCODE_NUM_BITS,
+                        ADDRESSING_NUM_BITS);
+        decimalToBinary(mc->addressing_modes[1], binary_buf + OPCODE_NUM_BITS + ADDRESSING_NUM_BITS,
+                        ADDRESSING_NUM_BITS);
+    }
     decimalToBinary(A, binary_buf + OPCODE_NUM_BITS + 2 * ADDRESSING_NUM_BITS, CODING_METHOD_NUM_BITS);
     binaryToBase32Word(binary_buf, words[0]);
 
@@ -245,6 +267,7 @@ bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filena
         assert(mc->size == 2);
         decimalToBinary(mc->registers[0], binary_buf, REGISTER_NUM_BITS);
         decimalToBinary(mc->registers[1], binary_buf + REGISTER_NUM_BITS, REGISTER_NUM_BITS);
+        decimalToBinary(A, binary_buf + 2 * REGISTER_NUM_BITS, CODING_METHOD_NUM_BITS);
         binaryToBase32Word(binary_buf, words[1]);
         return true;
     }
@@ -256,7 +279,13 @@ bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filena
             decimalToBinary(A, binary_buf + OPCODE_NUM_BITS + 2 * ADDRESSING_NUM_BITS, CODING_METHOD_NUM_BITS);
             binaryToBase32Word(binary_buf, words[operand_word_index++]);
         } else if (mc->addressing_modes[i] == REGISTER_ADDRESSING) {
-            decimalToBinary(mc->registers[i], binary_buf + i * REGISTER_NUM_BITS, REGISTER_NUM_BITS);
+            if (i == 0) {
+                decimalToBinary(mc->registers[i], binary_buf, REGISTER_NUM_BITS);
+                decimalToBinary(0, binary_buf + REGISTER_NUM_BITS, REGISTER_NUM_BITS);
+            } else if (i == 1) {
+                decimalToBinary(0, binary_buf, REGISTER_NUM_BITS);
+                decimalToBinary(mc->registers[i], binary_buf + REGISTER_NUM_BITS, REGISTER_NUM_BITS);
+            }
             decimalToBinary(A, binary_buf + OPCODE_NUM_BITS + 2 * ADDRESSING_NUM_BITS, CODING_METHOD_NUM_BITS);
             binaryToBase32Word(binary_buf, words[operand_word_index++]);
         } else if (mc->addressing_modes[i] == DIRECT_ADDRESSING) {
@@ -300,14 +329,20 @@ bool machineCodeGetIsExternOperand(MachineCode mc, int index) {
     return mc->is_extern[index];
 }
 
-const char *machineCodeGetExternalOperandBase32Address(MachineCode mc, int index) {
-    if (!mc->is_extern[index]) {
-        return NULL;
-    }
-    return mc->words[mc->extern_words_index[index]];
+int machineCodeGetExternalOperandAddress(MachineCode mc, int index) {
+    assert(mc->is_extern[index]);
+    return mc->address + mc->extern_words_index[index];
 }
 
 void machineCodeToObjFile(MachineCode mc, FILE *f, int start_address_offset) {
-    // TODO: implement
+    int start_address = mc->address + start_address_offset;
+    char binary_buf[BINARY_WORD_SIZE + 1];
+    char base32_buf[BASE32_WORD_SIZE + 1];
+
+    for (int i = 0; i < mc->size; ++i) {
+        decimalToBinary(start_address + i, binary_buf, BINARY_WORD_SIZE);
+        binaryToBase32Word(binary_buf, base32_buf);
+        fprintf(f, "%s %s\n", base32_buf, mc->words[i]);
+    }
 }
 

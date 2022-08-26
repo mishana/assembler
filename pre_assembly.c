@@ -70,7 +70,7 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
                 printf("Error in %s.%s line %d: Macro %s on was already previously defined on line %d\n",
                        filename, SOURCE_FILE_SUFFIX, macro_def_line_num, macro_name, macroGetDefLineNum(found_macro));
                 success = false;
-                macroDestroy(found_macro);
+//                macroDestroy(found_macro);
             }
 
             macroDestroy(m);
@@ -110,7 +110,7 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
 
             if (res == LIST_SUCCESS) { // found macro
                 fputs(macroGetBody(found_macro), dst_file);
-                macroDestroy(found_macro);
+//                macroDestroy(found_macro);
             } else {
                 fputs(line, dst_file);
             }

@@ -5,7 +5,6 @@
 #include "first_pass.h"
 #include "parser.h"
 #include "str_utils.h"
-#include "errors.h"
 #include "symtab.h"
 #include "const_tables.h"
 #include "file_utils.h"
@@ -68,7 +67,7 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
                 printf("Error in %s.%s line %d: duplicate label '%s' was previously defined on line %d\n",
                        filename, SOURCE_FILE_SUFFIX, line_num, statementGetLabel(s),
                        symtabEntryGetLineNum(found_entry));
-                symtabEntryDestroy(found_entry);
+//                symtabEntryDestroy(found_entry);
             } else {
                 listAppend(symtab, entry);
             }
@@ -101,7 +100,7 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
                         printf("Error in %s.%s line %d: duplicate extern label '%s' was previously defined on line %d\n",
                                filename, SOURCE_FILE_SUFFIX, line_num, extern_operand,
                                symtabEntryGetLineNum(found_entry));
-                        symtabEntryDestroy(found_entry);
+//                        symtabEntryDestroy(found_entry);
                     } else {
                         listAppend(symtab, entry);
                     }

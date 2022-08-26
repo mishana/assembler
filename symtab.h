@@ -39,8 +39,6 @@ void symtabEntrySetValue(SymtabEntry e, int value);
 
 void symtabEntrySetIsEntry(SymtabEntry e, bool is_entry);
 
-int symbolTableGetAddress(List symtab, const char *name);
-
 SymtabEntry symbolTableFindByName(List symtab, const char *name);
 
 #endif //ASSEMBLER_SYMTAB_H

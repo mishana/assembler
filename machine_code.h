@@ -26,7 +26,7 @@ const char *machineCodeGetOperand(MachineCode mc, int index);
 
 bool machineCodeGetIsExternOperand(MachineCode mc, int index);
 
-const char *machineCodeGetExternalOperandBase32Address(MachineCode mc, int index);
+int machineCodeGetExternalOperandAddress(MachineCode mc, int index);
 
 bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filename_suffix, const char *filename,
                                  int start_address_offset);

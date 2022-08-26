@@ -154,7 +154,7 @@ ListResult listFind(List l, void *to_find, void **found) {
     for (Node it = l->head; it; it = it->next) {
         /* Comparing the data in the node to the data we are looking for. */
         if (l->leq(it->data, to_find) == 0) {
-            *found = l->lcopy(it->data);
+            *found = it->data;
             return LIST_SUCCESS;
         }
     }

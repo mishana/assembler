@@ -13,8 +13,8 @@ struct symtab_entry_t {
     char *name;
     int value;
 
-    // TODO: get rid of these two booleans
     bool is_entry;
+    // TODO: get rid of this
     bool is_struct;
 
     int line_num;
@@ -150,27 +150,6 @@ void symtabEntrySetValue(SymtabEntry e, int value) {
  */
 void symtabEntrySetIsEntry(SymtabEntry e, bool is_entry) {
     e->is_entry = is_entry;
-}
-
-/**
- * It returns the address of the symbol in the symbol table.
- *
- * @param symtab The symbol table.
- * @param name The name of the symbol to look up.
- */
-int symbolTableGetAddress(List symtab, const char *name) {
-    // This is a hack to get the entry in the symbol table
-    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, false, 0, SYMBOL_DATA);
-    SymtabEntry found_entry;
-    int res;
-    if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_SUCCESS) {
-        res = found_entry->value;
-    } else {
-        res = SYMBOL_ADDRESS_NOT_FOUND;
-    }
-    symtabEntryDestroy(dummy_entry);
-    symtabEntryDestroy(found_entry);
-    return res;
 }
 
 /**

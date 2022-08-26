@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     }
 
     for (int i = 1; i < argc; ++i) {
-        printf("=============================================================");
+        printf("=============================================================\n");
 
         const char *file_to_compile = argv[i];
 
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
             removeFileWithSuffix(file_to_compile, AFTER_MACRO_SUFFIX);
             continue;
         } else {
-            printf("Pre-assembly for %s succeeded. %s.%s file created\n", file_to_compile, file_to_compile, AFTER_MACRO_SUFFIX);
+            printf("Pre-assembly for %s succeeded. %s%s file created\n", file_to_compile, file_to_compile, AFTER_MACRO_SUFFIX);
         }
 
         printf("Run first-pass for %s\n", file_to_compile);
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
             removeFileWithSuffix(file_to_compile, ENTRIES_FILE_SUFFIX);
             removeFileWithSuffix(file_to_compile, EXTERNAL_FILE_SUFFIX);
         } else {
-            printf("Second-pass for %s succeeded. %s.%s file created\n", file_to_compile, file_to_compile, OBJECT_FILE_SUFFIX);
+            printf("Second-pass for %s succeeded. %s%s file created\n", file_to_compile, file_to_compile, OBJECT_FILE_SUFFIX);
         }
     }
 

@@ -8,6 +8,7 @@
 #include "memmap.h"
 #include "const_tables.h"
 #include "errors.h"
+#include "base_conversion.h"
 
 
 struct memory_code_t {
@@ -116,5 +117,19 @@ size_t calcDirectiveDataSize(Statement s) {
 }
 
 void memoryCodeToObjFile(MemoryCode mc, FILE *f, int start_address_offset) {
-    // TODO: implement
+    int start_address = mc->start_address + start_address_offset;
+    char binary_buf1[BINARY_WORD_SIZE + 1];
+    char binary_buf2[BINARY_WORD_SIZE + 1];
+    char base32_buf1[BASE32_WORD_SIZE + 1];
+    char base32_buf2[BASE32_WORD_SIZE + 1];
+
+    for (int i = 0; i < mc->size; ++i) {
+        decimalToBinary(start_address + i, binary_buf1, BINARY_WORD_SIZE);
+        binaryToBase32Word(binary_buf1, base32_buf1);
+
+        decimalToBinary(mc->values[i], binary_buf2, BINARY_WORD_SIZE);
+        binaryToBase32Word(binary_buf2, base32_buf2);
+
+        fprintf(f, "%s %s\n", base32_buf1, base32_buf2);
+    }
 }

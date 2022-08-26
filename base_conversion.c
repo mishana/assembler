@@ -9,9 +9,6 @@
 #include "base_conversion.h"
 #include "errors.h"
 
-// Constants and MACROs
-#define BASE32 32
-
 #define CHK(_n) ((_n) <= sz)
 
 
@@ -26,7 +23,8 @@ char BASE32_DIGITS[] = {'!', '@', '#', '$', '%', '^', '&', '*', '<', '>',
  *
  * @param binary A string of 1's and 0's
  */
-int binaryToDecimal(const char *binary, size_t num_bits) {
+int binaryToDecimal(const char *binary, int num_bits) {
+//    size_t num_bits = strlen(binary);
     assert(num_bits <= strlen(binary));
     int decimal = 0;
 

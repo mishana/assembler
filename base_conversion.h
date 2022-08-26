@@ -8,7 +8,7 @@
 #define BASE32_WORD_SIZE 2
 #define BINARY_WORD_SIZE 10
 
-int binaryToDecimal(const char *binary, size_t num_bits);
+int binaryToDecimal(const char *binary, int num_bits);
 
 char *decimalToBinary(int p_val, char *buf, size_t num_bits);
 
