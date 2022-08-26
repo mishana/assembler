@@ -13,7 +13,8 @@ struct symtab_entry_t {
     char *name;
     int value;
 
-    bool is_extern;
+    // TODO: get rid of these two booleans
+    bool is_entry;
     bool is_struct;
 
     int line_num;
@@ -25,7 +26,7 @@ struct symtab_entry_t {
  *
  * @param name The name of the symbol.
  * @param value The value of the symbol.
- * @param is_extern Whether the symbol is external or not.
+ * @param is_entry Whether the symbol is an entry or not.
  * @param is_struct Whether the symbol is a struct or not.
  * @param line_num The line number of the symbol.
  * @param type The type of the symbol.
@@ -33,7 +34,7 @@ struct symtab_entry_t {
  * @return A new symbol table entry.
  */
 SymtabEntry
-symtabEntryCreate(const char *name, int value, bool is_extern, bool is_struct, int line_num, SymbolType type) {
+symtabEntryCreate(const char *name, int value, bool is_entry, bool is_struct, int line_num, SymbolType type) {
     SymtabEntry e = malloc(sizeof(*e));
     if (!e) {
         memoryAllocationError();
@@ -41,7 +42,7 @@ symtabEntryCreate(const char *name, int value, bool is_extern, bool is_struct, i
 
     e->name = strdup(name);
     e->value = value;
-    e->is_extern = is_extern;
+    e->is_entry = is_entry;
     e->line_num = line_num;
     e->type = type;
     return e;
@@ -63,7 +64,7 @@ int symtabEntryCmp(SymtabEntry e1, SymtabEntry e2) {
  * @param e The entry to copy.
  */
 SymtabEntry symtabEntryCopy(SymtabEntry e) {
-    return symtabEntryCreate(e->name, e->value, e->is_extern, e->is_struct, e->line_num, e->type);
+    return symtabEntryCreate(e->name, e->value, e->is_entry, e->is_struct, e->line_num, e->type);
 }
 
 /**
@@ -99,8 +100,8 @@ int symtabEntryGetValue(SymtabEntry e) {
  *
  * @param e The symbol table entry to check.
  */
-bool symtabEntryIsExtern(SymtabEntry e) {
-    return e->is_extern;
+bool symtabEntryIsEntry(SymtabEntry e) {
+    return e->is_entry;
 }
 
 /**
@@ -131,43 +132,7 @@ bool symtabEntryIsStruct(SymtabEntry e) {
 }
 
 /**
- * It checks if the name is in the symbol table.
- *
- * @param symtab The symbol table to search in.
- * @param name the name of the symbol to look for
- */
-bool isInSymbolTable(List symtab, const char *name) {
-    bool res;
-    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, false, 0, SYMBOL_DATA);
-    SymtabEntry found_entry;
-    if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_SUCCESS) {
-        res = true;
-    } else {
-        res = false;
-    }
-    symtabEntryDestroy(dummy_entry);
-    symtabEntryDestroy(found_entry);
-
-    return res;
-}
-
-bool isStructInSymbolTable(List symtab, const char *name) {
-    bool res;
-    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, true, 0, SYMBOL_DATA);
-    SymtabEntry found_entry;
-    if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_SUCCESS) {
-        res = symtabEntryIsStruct(found_entry);
-    } else {
-        res = false;
-    }
-    symtabEntryDestroy(dummy_entry);
-    symtabEntryDestroy(found_entry);
-
-    return res;
-}
-
-/**
- *
+ * It sets the value of the symbol table entry.
  *
  * @param e The symbol table entry to set the value of.
  * @param value the value to set the entry to
@@ -176,8 +141,25 @@ void symtabEntrySetValue(SymtabEntry e, int value) {
     e->value = value;
 }
 
+
+/**
+ * It sets the is_entry flag of the symbol table entry.
+ *
+ * @param e The symbol table entry to set the is_entry flag for.
+ * @param is_entry true if this is an entry point, false otherwise
+ */
+void symtabEntrySetIsEntry(SymtabEntry e, bool is_entry) {
+    e->is_entry = is_entry;
+}
+
+/**
+ * It returns the address of the symbol in the symbol table.
+ *
+ * @param symtab The symbol table.
+ * @param name The name of the symbol to look up.
+ */
 int symbolTableGetAddress(List symtab, const char *name) {
-    // This is a hack to get the address of a symbol.
+    // This is a hack to get the entry in the symbol table
     SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, false, 0, SYMBOL_DATA);
     SymtabEntry found_entry;
     int res;
@@ -189,4 +171,21 @@ int symbolTableGetAddress(List symtab, const char *name) {
     symtabEntryDestroy(dummy_entry);
     symtabEntryDestroy(found_entry);
     return res;
+}
+
+/**
+ * It finds the symbol table entry by name.
+ *
+ * @param symtab The symbol table to search.
+ * @param name The name of the symbol to find.
+ */
+SymtabEntry symbolTableFindByName(List symtab, const char *name) {
+    // This is a hack to get the entry in the symbol table
+    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, false, 0, SYMBOL_DATA);
+    SymtabEntry found_entry;
+    if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_NOT_FOUND) {
+        found_entry = NULL;
+    }
+    symtabEntryDestroy(dummy_entry);
+    return found_entry;
 }

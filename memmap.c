@@ -14,7 +14,7 @@ struct memory_code_t {
     int* values;
     int size;
 
-    int start_address; // 0-255
+    int start_address;
 };
 
 MemoryCode memoryCodeCreate(Statement s, int dc) {
@@ -115,6 +115,6 @@ size_t calcDirectiveDataSize(Statement s) {
     }
 }
 
-void memoryCodeToObjFile(MemoryCode mc, FILE *f) {
+void memoryCodeToObjFile(MemoryCode mc, FILE *f, int start_address_offset) {
     // TODO: implement
 }

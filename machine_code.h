@@ -20,8 +20,17 @@ void machineCodeDestroy(MachineCode mc);
 
 size_t machineCodeGetSize(MachineCode mc);
 
-void machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filename_suffix, const char *filename);
+int machineCodeGetNumOperands(MachineCode mc);
 
-void machineCodeToObjFile(MachineCode mc, FILE *f);
+const char *machineCodeGetOperand(MachineCode mc, int index);
+
+bool machineCodeGetIsExternOperand(MachineCode mc, int index);
+
+const char *machineCodeGetExternalOperandBase32Address(MachineCode mc, int index);
+
+bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filename_suffix, const char *filename,
+                                 int start_address_offset);
+
+void machineCodeToObjFile(MachineCode mc, FILE *f, int start_address_offset);
 
 #endif //ASSEMBLER_MACHINE_CODE_H

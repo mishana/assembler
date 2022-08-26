@@ -25,3 +25,15 @@ FILE *openFileWithSuffix(const char *filename, const char *mode, const char *suf
     free((void *) filename_with_suffix);
     return file;
 }
+
+/**
+ * It removes the file with the given suffix.
+ *
+ * @param filename The name of the file to remove.
+ * @param suffix The suffix of the file to be removed.
+ */
+void removeFileWithSuffix(const char *filename, const char *suffix) {
+    const char *filename_with_suffix = strConcat(filename, suffix);
+    remove(filename_with_suffix);
+    free((void *) filename_with_suffix);
+}

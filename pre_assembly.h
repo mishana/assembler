@@ -7,6 +7,8 @@
 
 #include <stdbool.h>
 
+#define AFTER_MACRO_SUFFIX ".am"
+
 bool run_pre_assembly(const char *filename);
 
 #endif //ASSEMBLER_PRE_ASSEMBLY_H

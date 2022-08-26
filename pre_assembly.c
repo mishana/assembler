@@ -16,7 +16,7 @@
 
 
 #define SOURCE_FILE_SUFFIX ".as"
-#define AFTER_MACRO_SUFFIX ".am"
+
 
 #define MAX_LINE_LEN 80 + 1
 

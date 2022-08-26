@@ -17,7 +17,7 @@ typedef enum SymbolType {
 
 typedef struct symtab_entry_t *SymtabEntry;
 
-SymtabEntry symtabEntryCreate(const char *name, int value, bool is_extern, bool is_struct, int line_num, SymbolType type);
+SymtabEntry symtabEntryCreate(const char *name, int value, bool is_entry, bool is_struct, int line_num, SymbolType type);
 
 int symtabEntryCmp(SymtabEntry e1, SymtabEntry e2);
 
@@ -29,20 +29,18 @@ const char *symtabEntryGetName(SymtabEntry e);
 
 int symtabEntryGetValue(SymtabEntry e);
 
-bool symtabEntryIsExtern(SymtabEntry e);
+bool symtabEntryIsEntry(SymtabEntry e);
 
 int symtabEntryGetLineNum(SymtabEntry e);
 
 SymbolType symtabEntryGetType(SymtabEntry e);
 
-bool symtabEntryIsStruct(SymtabEntry e);
-
 void symtabEntrySetValue(SymtabEntry e, int value);
 
-bool isInSymbolTable(List symtab, const char *name);
-
-bool isStructInSymbolTable(List symtab, const char *name);
+void symtabEntrySetIsEntry(SymtabEntry e, bool is_entry);
 
 int symbolTableGetAddress(List symtab, const char *name);
+
+SymtabEntry symbolTableFindByName(List symtab, const char *name);
 
 #endif //ASSEMBLER_SYMTAB_H

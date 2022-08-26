@@ -9,4 +9,6 @@
 
 FILE *openFileWithSuffix(const char *filename, const char *mode, const char *suffix);
 
+void removeFileWithSuffix(const char *filename, const char *suffix);
+
 #endif //ASSEMBLER_FILE_UTILS_H

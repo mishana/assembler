@@ -26,6 +26,6 @@ int memoryCodeGetStartAddress(MemoryCode mc);
 
 size_t calcDirectiveDataSize(Statement s);
 
-void memoryCodeToObjFile(MemoryCode mc, FILE *f);
+void memoryCodeToObjFile(MemoryCode mc, FILE *f, int start_address_offset);
 
 #endif //ASSEMBLER_MEMMAP_H
