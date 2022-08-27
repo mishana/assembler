@@ -229,7 +229,8 @@ advanceNextOperandInLine(const char *line, int *next_operand_start_idx_ptr, int 
 
 static bool
 parseMacroStartStatement(const char *line, int line_num, const char *filename, const char *filename_suffix, List tokens,
-                         List operands, const char *label, char **token, int next_token_start_idx, int next_token_stop_idx) {
+                         List operands, const char *label, char **token, int next_token_start_idx,
+                         int next_token_stop_idx) {
     bool success = true;
     int prev_token_stop_idx;
 
@@ -276,7 +277,320 @@ parseMacroStartStatement(const char *line, int line_num, const char *filename, c
                filename_suffix, line_num);
         success = false;
     }
-    success = success && macroCheckSyntax(token, line_num, filename, filename_suffix);
+    success = success && macroCheckSyntax(*token, line_num, filename, filename_suffix);
+
+    return success;
+}
+
+static bool
+parseMacroEndStatement(const char *line, int line_num, const char *filename, const char *filename_suffix,
+                       const char *label, int next_token_start_idx, int next_token_stop_idx) {
+    bool success = true;
+    int prev_token_stop_idx;
+
+    if (label) {
+        printf("Error in %s%s line %d: Macro end statement can not have a label\n", filename, filename_suffix,
+               line_num);
+        success = false;
+    }
+    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, 0, next_token_start_idx) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter before macro end statement\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+    prev_token_stop_idx = next_token_stop_idx;
+    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+    if (next_token_start_idx != -1) {
+        printf("Error in %s%s line %d: Macro end statement must have no arguments\n", filename, filename_suffix,
+               line_num);
+        success = false;
+    }
+    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, strlen(line)) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter after macro end statement\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+
+    return success;
+}
+
+static bool
+parseDirectiveStatement(const char *line, int line_num, const char *filename, const char *filename_suffix, List tokens,
+                         List operands, const char *mnemonic, char **token, int next_token_start_idx,
+                         int next_token_stop_idx) {
+    bool success = true;
+    int prev_token_stop_idx;
+    int operand_id;
+    int string_start_idx;
+    int string_end_idx;
+
+    prev_token_stop_idx = next_token_stop_idx;
+    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+    if (next_token_start_idx == -1) {
+        printf("Error in %s%s line %d: Directive must have at least one argument\n", filename, filename_suffix,
+               line_num);
+        success = false;
+    } else {
+        free(*token);
+        *token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
+        listAppend(tokens, *token);
+        listAppend(operands, *token);
+    }
+    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter before first operand\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+
+    operand_id = 1;
+
+    if (strcmp(mnemonic, DIRECTIVE_DATA) == 0) {
+        while (next_token_start_idx != -1) {
+            if (!isNumeric(*token)) {
+                printf("Error in %s%s line %d: .data operand no. %d is not numeric\n", filename, filename_suffix,
+                       line_num, operand_id);
+                success = false;
+            }
+
+            prev_token_stop_idx = next_token_stop_idx;
+            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+            if (next_token_start_idx == -1) {
+                break;
+            }
+            operand_id++;
+            if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) != 1) {
+                printf("Error in %s%s line %d: Must have exactly one comma delimiter between .data operands no. %d and no. %d\n",
+                       filename,
+                       filename_suffix, line_num, operand_id - 1, operand_id);
+                success = false;
+            } else {
+                free(*token);
+                *token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
+                listAppend(tokens, *token);
+                listAppend(operands, *token);
+            }
+        }
+    } else if (strcmp(mnemonic, DIRECTIVE_STRING) == 0) {
+        string_start_idx = next_token_start_idx;
+        if (line[string_start_idx] != QUOTATION_CHAR) {
+            printf("Error in %s%s line %d: .string directive operand must start with a \" character\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+        string_end_idx = strFindNextChar(line, string_start_idx + 1, QUOTATION_CHAR);
+        if (string_end_idx == -1) {
+            printf("Error in %s%s line %d: .string directive operand must end with a \" character\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+        if (success) {
+            free(*token);
+            *token = readNextToken(line, string_start_idx, string_end_idx + 1);
+            listAppend(tokens, *token);
+            listAppend(operands, *token);
+        }
+        next_token_start_idx = string_start_idx;
+        next_token_stop_idx = string_end_idx + 1;
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        if (next_token_start_idx != -1) {
+            printf("Error in %s%s line %d: .string directive must have exactly one operand\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+    } else if (strcmp(mnemonic, DIRECTIVE_STRUCT) == 0) {
+        if (!isNumeric(*token)) {
+            printf("Error in %s%s line %d: .struct directive first operand must be numeric\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+        prev_token_stop_idx = next_token_stop_idx;
+
+        string_start_idx = strFindNextChar(line, next_token_stop_idx, QUOTATION_CHAR);
+
+        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, string_start_idx) != 1) {
+            printf("Error in %s%s line %d: Must have exactly one comma delimiter between .struct directive operands\n",
+                   filename, filename_suffix, line_num);
+            success = false;
+        }
+
+        if (line[string_start_idx] != QUOTATION_CHAR) {
+            printf("Error in %s%s line %d: .string directive operand must start with a \" character\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+        string_end_idx = strFindNextChar(line, string_start_idx + 1, QUOTATION_CHAR);
+        if (string_end_idx == -1) {
+            printf("Error in %s%s line %d: .string directive operand must end with a \" character\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+        free(*token);
+        *token = readNextToken(line, string_start_idx, string_end_idx + 1);
+        listAppend(tokens, *token);
+        listAppend(operands, *token);
+
+        prev_token_stop_idx = string_end_idx + 1;
+
+    } else if (strcmp(mnemonic, DIRECTIVE_ENTRY) == 0) {
+        prev_token_stop_idx = next_token_stop_idx;
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        if (next_token_start_idx != -1) {
+            printf("Error in %s%s line %d: Directive .entry must have exactly one argument\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+    } else { /* .extern */
+        prev_token_stop_idx = next_token_stop_idx;
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        if (next_token_start_idx != -1) {
+            printf("Error in %s%s line %d: Directive .extern must have exactly one argument\n", filename,
+                   filename_suffix, line_num);
+            success = false;
+        }
+    }
+
+    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, strlen(line)) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter after last operand\n", filename, filename_suffix,
+               line_num);
+        success = false;
+    }
+
+    return success;
+}
+
+static bool
+parseInstructionStatement(const char *line, int line_num, const char *filename, const char *filename_suffix, List tokens,
+                        List operands, const char *mnemonic, char **token, int next_token_start_idx,
+                        int next_token_stop_idx) {
+    bool success = true;
+    int prev_token_stop_idx;
+
+    if (is0OperandInstruction(*token)) {
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        if (next_token_start_idx != -1) {
+            printf("Error in %s%s line %d: Instruction %s must have no operands\n", filename, filename_suffix,
+                   line_num, mnemonic);
+            success = false;
+        }
+    } else if (is1OperandInstruction(*token)) {
+        prev_token_stop_idx = next_token_stop_idx;
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        if (next_token_start_idx == -1) {
+            printf("Error in %s%s line %d: Instruction %s must have exactly one operand\n", filename,
+                   filename_suffix, line_num, mnemonic);
+            success = false;
+        } else {
+            if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
+                printf("Error in %s%s line %d: Misplaced comma delimiter before 1st operand\n",
+                       filename, filename_suffix, line_num);
+                success = false;
+            }
+            if (success) {
+                free(*token);
+                *token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
+                listAppend(tokens, *token);
+                listAppend(operands, *token);
+
+                prev_token_stop_idx = next_token_stop_idx;
+                advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+                if (next_token_start_idx != -1) {
+                    printf("Error in %s%s line %d: Instruction %s must have exactly one operand\n", filename,
+                           filename_suffix, line_num, mnemonic);
+                    success = false;
+                } else {
+                    AddressingMode mode = getAddressingMode(*token);
+                    if (mode == INVALID_ADDRESSING) {
+                        printf("Error in %s%s line %d: invalid operand\n", filename, filename_suffix, line_num);
+                        success = false;
+                    } else if (!isValidAddressing_1_OP(mnemonic, mode)) {
+                        printf("Error in %s%s line %d: invalid addressing for operand and instruction\n", filename,
+                               filename_suffix, line_num);
+                        success = false;
+                    }
+                }
+            }
+        }
+    } else { /* 2 operands instruction */
+        char *operand_src = NULL;
+        char *operand_dest = NULL;
+        AddressingMode mode_src;
+        AddressingMode mode_dest;
+
+        prev_token_stop_idx = next_token_stop_idx;
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        if (next_token_start_idx == -1) {
+            printf("Error in %s%s line %d: Instruction %s must have exactly two operands\n", filename,
+                   filename_suffix,
+                   line_num, mnemonic);
+            success = false;
+        } else {
+            if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
+                printf("Error in %s%s line %d: Misplaced comma delimiter before 1st operand\n",
+                       filename, filename_suffix, line_num);
+                success = false;
+            }
+            if (success) {
+                operand_src = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
+                if (!operand_src) {
+                    memoryAllocationError();
+                }
+                listAppend(tokens, operand_src);
+                listAppend(operands, operand_src);
+
+                prev_token_stop_idx = next_token_stop_idx;
+                advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+                if (next_token_start_idx == -1) {
+                    printf("Error in %s%s line %d: Instruction %s must have exactly two operands\n", filename,
+                           filename_suffix, line_num, mnemonic);
+                    success = false;
+                } else {
+                    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) !=
+                        1) {
+                        printf("Error in %s%s line %d: Must have exactly one comma delimiter between 1st and 2nd operands\n",
+                               filename, filename_suffix, line_num);
+                        success = false;
+                    }
+                    operand_dest = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
+                    if (!operand_dest) {
+                        memoryAllocationError();
+                    }
+                    listAppend(tokens, operand_dest);
+                    listAppend(operands, operand_dest);
+
+                    mode_src = getAddressingMode(operand_src);
+                    mode_dest = getAddressingMode(operand_dest);
+
+                    if (mode_src == INVALID_ADDRESSING) {
+                        printf("Error in %s%s line %d: invalid source operand\n", filename, filename_suffix,
+                               line_num);
+                        success = false;
+                    }
+                    if (mode_dest == INVALID_ADDRESSING) {
+                        printf("Error in %s%s line %d: invalid destination operand\n", filename, filename_suffix,
+                               line_num);
+                        success = false;
+                    }
+                    if (success && !isValidAddressing_2_OP(mnemonic, mode_src, mode_dest)) {
+                        printf("Error in %s%s line %d: invalid addressing for operands and instruction\n", filename,
+                               filename_suffix, line_num);
+                        success = false;
+                    }
+                }
+            }
+        }
+        if (operand_src) {
+            free(operand_src);
+        }
+        if (operand_dest) {
+            free(operand_dest);
+        }
+    }
+
+    if (success && strCountCharInRange(line, OPERANDS_DELIM_CHAR, next_token_stop_idx, strlen(line)) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter after last operand\n", filename, filename_suffix,
+               line_num);
+        success = false;
+    }
 
     return success;
 }
@@ -301,9 +615,6 @@ parse(const char *line, int line_num, const char *filename, const char *filename
     List operands;
     StatementType type;
     const char *mnemonic;
-    int prev_token_stop_idx;
-    int string_start_idx, string_end_idx;
-    int operand_id;
     Statement s;
 
     /* skip if a comment line */
@@ -354,334 +665,29 @@ parse(const char *line, int line_num, const char *filename, const char *filename
 
     mnemonic = strdup(token);
     operands = listCreate((list_eq) strcmp, (list_copy) strdup, (list_free) free);
-    prev_token_stop_idx = next_token_stop_idx;
 
     if (type == OTHER && !is_pre_assembly) {
         printf("Error in %s%s line %d: Unknown directive/instruction, undefined statement\n", filename, filename_suffix,
                line_num);
         success = false;
     } else if (type == MACRO_START) {
-        if (label) {
-            printf("Error in %s%s line %d: Macro start statement can not have a label\n", filename, filename_suffix,
-                   line_num);
+        if (!parseMacroStartStatement(line, line_num, filename, filename_suffix, tokens, operands, label, &token,
+                                      next_token_start_idx, next_token_stop_idx)) {
             success = false;
         }
-        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, 0, next_token_start_idx) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter before macro start statement\n", filename,
-                   filename_suffix, line_num);
-            success = false;
-        }
-        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-        if (next_token_start_idx == -1) {
-            printf("Error in %s%s line %d: Macro start statement must have exactly one argument\n", filename,
-                   filename_suffix, line_num);
-            success = false;
-        }
-        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter before macro name\n", filename,
-                   filename_suffix, line_num);
-            success = false;
-        }
-        if (success) {
-            free(token);
-            token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
-            listAppend(tokens, token);
-            listAppend(operands, token);
-        }
-
-        prev_token_stop_idx = next_token_stop_idx;
-        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-        if (next_token_start_idx != -1) {
-            printf("Error in %s%s line %d: Macro start statement must have exactly one argument\n", filename,
-                   filename_suffix, line_num);
-            success = false;
-        }
-        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, strlen(line)) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter after macro name\n", filename,
-                   filename_suffix, line_num);
-            success = false;
-        }
-        success = success && macroCheckSyntax(token, line_num, filename, filename_suffix);
     } else if (type == MACRO_END) {
-        if (label) {
-            printf("Error in %s%s line %d: Macro end statement can not have a label\n", filename, filename_suffix,
-                   line_num);
-            success = false;
-        }
-        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, 0, next_token_start_idx) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter before macro end statement\n", filename,
-                   filename_suffix, line_num);
-            success = false;
-        }
-        prev_token_stop_idx = next_token_stop_idx;
-        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-        if (next_token_start_idx != -1) {
-            printf("Error in %s%s line %d: Macro end statement must have no arguments\n", filename, filename_suffix,
-                   line_num);
-            success = false;
-        }
-        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, strlen(line)) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter after macro end statement\n", filename,
-                   filename_suffix, line_num);
+        if (!parseMacroEndStatement(line, line_num, filename, filename_suffix, label,
+                                    next_token_start_idx, next_token_stop_idx)) {
             success = false;
         }
     } else if (type == DIRECTIVE && !is_pre_assembly) {
-        prev_token_stop_idx = next_token_stop_idx;
-        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-        if (next_token_start_idx == -1) {
-            printf("Error in %s%s line %d: Directive must have at least one argument\n", filename, filename_suffix,
-                   line_num);
-            success = false;
-        } else {
-            free(token);
-            token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
-            listAppend(tokens, token);
-            listAppend(operands, token);
-        }
-        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter before first operand\n", filename,
-                   filename_suffix, line_num);
-            success = false;
-        }
-
-        operand_id = 1;
-
-        if (strcmp(mnemonic, DIRECTIVE_DATA) == 0) {
-            while (next_token_start_idx != -1) {
-                if (!isNumeric(token)) {
-                    printf("Error in %s%s line %d: .data operand no. %d is not numeric\n", filename, filename_suffix,
-                           line_num, operand_id);
-                    success = false;
-                }
-
-                prev_token_stop_idx = next_token_stop_idx;
-                advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-                if (next_token_start_idx == -1) {
-                    break;
-                }
-                operand_id++;
-                if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) != 1) {
-                    printf("Error in %s%s line %d: Must have exactly one comma delimiter between .data operands no. %d and no. %d\n",
-                           filename,
-                           filename_suffix, line_num, operand_id - 1, operand_id);
-                    success = false;
-                } else {
-                    free(token);
-                    token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
-                    listAppend(tokens, token);
-                    listAppend(operands, token);
-                }
-            }
-        } else if (strcmp(mnemonic, DIRECTIVE_STRING) == 0) {
-            string_start_idx = next_token_start_idx;
-            if (line[string_start_idx] != QUOTATION_CHAR) {
-                printf("Error in %s%s line %d: .string directive operand must start with a \" character\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-            string_end_idx = strFindNextChar(line, string_start_idx + 1, QUOTATION_CHAR);
-            if (string_end_idx == -1) {
-                printf("Error in %s%s line %d: .string directive operand must end with a \" character\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-            if (success) {
-                free(token);
-                token = readNextToken(line, string_start_idx, string_end_idx + 1);
-                listAppend(tokens, token);
-                listAppend(operands, token);
-            }
-            next_token_start_idx = string_start_idx;
-            next_token_stop_idx = string_end_idx + 1;
-            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-            if (next_token_start_idx != -1) {
-                printf("Error in %s%s line %d: .string directive must have exactly one operand\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-        } else if (strcmp(mnemonic, DIRECTIVE_STRUCT) == 0) {
-            if (!isNumeric(token)) {
-                printf("Error in %s%s line %d: .struct directive first operand must be numeric\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-            prev_token_stop_idx = next_token_stop_idx;
-
-            string_start_idx = strFindNextChar(line, next_token_stop_idx, QUOTATION_CHAR);
-
-            if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, string_start_idx) != 1) {
-                printf("Error in %s%s line %d: Must have exactly one comma delimiter between .struct directive operands\n",
-                       filename, filename_suffix, line_num);
-                success = false;
-            }
-
-            if (line[string_start_idx] != QUOTATION_CHAR) {
-                printf("Error in %s%s line %d: .string directive operand must start with a \" character\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-            string_end_idx = strFindNextChar(line, string_start_idx + 1, QUOTATION_CHAR);
-            if (string_end_idx == -1) {
-                printf("Error in %s%s line %d: .string directive operand must end with a \" character\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-            free(token);
-            token = readNextToken(line, string_start_idx, string_end_idx + 1);
-            listAppend(tokens, token);
-            listAppend(operands, token);
-
-            prev_token_stop_idx = string_end_idx + 1;
-
-        } else if (strcmp(mnemonic, DIRECTIVE_ENTRY) == 0) {
-            prev_token_stop_idx = next_token_stop_idx;
-            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-            if (next_token_start_idx != -1) {
-                printf("Error in %s%s line %d: Directive .entry must have exactly one argument\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-        } else { /* .extern */
-            prev_token_stop_idx = next_token_stop_idx;
-            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-            if (next_token_start_idx != -1) {
-                printf("Error in %s%s line %d: Directive .extern must have exactly one argument\n", filename,
-                       filename_suffix, line_num);
-                success = false;
-            }
-        }
-
-        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, strlen(line)) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter after last operand\n", filename, filename_suffix,
-                   line_num);
+        if (!parseDirectiveStatement(line, line_num, filename, filename_suffix, tokens, operands, mnemonic, &token,
+                                     next_token_start_idx, next_token_stop_idx)) {
             success = false;
         }
     } else if (!is_pre_assembly) { /* instruction */
-        if (is0OperandInstruction(token)) {
-            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-            if (next_token_start_idx != -1) {
-                printf("Error in %s%s line %d: Instruction %s must have no operands\n", filename, filename_suffix,
-                       line_num, token);
-                success = false;
-            }
-        } else if (is1OperandInstruction(token)) {
-            prev_token_stop_idx = next_token_stop_idx;
-            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-            if (next_token_start_idx == -1) {
-                printf("Error in %s%s line %d: Instruction %s must have exactly one operand\n", filename,
-                       filename_suffix,
-                       line_num, token);
-                success = false;
-            } else {
-                if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
-                    printf("Error in %s%s line %d: Misplaced comma delimiter before 1st operand\n",
-                           filename, filename_suffix, line_num);
-                    success = false;
-                }
-                if (success) {
-                    free(token);
-                    token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
-                    listAppend(tokens, token);
-                    listAppend(operands, token);
-
-                    prev_token_stop_idx = next_token_stop_idx;
-                    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-                    if (next_token_start_idx != -1) {
-                        printf("Error in %s%s line %d: Instruction %s must have exactly one operand\n", filename,
-                               filename_suffix, line_num, token);
-                        success = false;
-                    } else {
-                        AddressingMode mode = getAddressingMode(token);
-                        if (mode == INVALID_ADDRESSING) {
-                            printf("Error in %s%s line %d: invalid operand\n", filename, filename_suffix, line_num);
-                            success = false;
-                        } else if (!isValidAddressing_1_OP(mnemonic, mode)) {
-                            printf("Error in %s%s line %d: invalid addressing for operand and instruction\n", filename,
-                                   filename_suffix, line_num);
-                            success = false;
-                        }
-                    }
-                }
-            }
-        } else { /* 2 operands instruction */
-            char *operand_src = NULL;
-            char *operand_dest = NULL;
-            AddressingMode mode_src;
-            AddressingMode mode_dest;
-
-            prev_token_stop_idx = next_token_stop_idx;
-            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-            if (next_token_start_idx == -1) {
-                printf("Error in %s%s line %d: Instruction %s must have exactly two operands\n", filename,
-                       filename_suffix,
-                       line_num, token);
-                success = false;
-            } else {
-                if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
-                    printf("Error in %s%s line %d: Misplaced comma delimiter before 1st operand\n",
-                           filename, filename_suffix, line_num);
-                    success = false;
-                }
-                if (success) {
-                    operand_src = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-                    if (!operand_src) {
-                        memoryAllocationError();
-                    }
-                    listAppend(tokens, operand_src);
-                    listAppend(operands, operand_src);
-
-                    prev_token_stop_idx = next_token_stop_idx;
-                    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
-                    if (next_token_start_idx == -1) {
-                        printf("Error in %s%s line %d: Instruction %s must have exactly two operands\n", filename,
-                               filename_suffix, line_num, token);
-                        success = false;
-                    } else {
-                        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) !=
-                            1) {
-                            printf("Error in %s%s line %d: Must have exactly one comma delimiter between 1st and 2nd operands\n",
-                                   filename, filename_suffix, line_num);
-                            success = false;
-                        }
-                        operand_dest = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-                        if (!operand_dest) {
-                            memoryAllocationError();
-                        }
-                        listAppend(tokens, operand_dest);
-                        listAppend(operands, operand_dest);
-
-                        mode_src = getAddressingMode(operand_src);
-                        mode_dest = getAddressingMode(operand_dest);
-
-                        if (mode_src == INVALID_ADDRESSING) {
-                            printf("Error in %s%s line %d: invalid source operand\n", filename, filename_suffix,
-                                   line_num);
-                            success = false;
-                        }
-                        if (mode_dest == INVALID_ADDRESSING) {
-                            printf("Error in %s%s line %d: invalid destination operand\n", filename, filename_suffix,
-                                   line_num);
-                            success = false;
-                        }
-                        if (success && !isValidAddressing_2_OP(mnemonic, mode_src, mode_dest)) {
-                            printf("Error in %s%s line %d: invalid addressing for operands and instruction\n", filename,
-                                   filename_suffix, line_num);
-                            success = false;
-                        }
-                    }
-                }
-            }
-            if (operand_src) {
-                free(operand_src);
-            }
-            if (operand_dest) {
-                free(operand_dest);
-            }
-        }
-
-        if (success && strCountCharInRange(line, OPERANDS_DELIM_CHAR, next_token_stop_idx, strlen(line)) > 0) {
-            printf("Error in %s%s line %d: Misplaced comma delimiter after last operand\n", filename, filename_suffix,
-                   line_num);
+        if (!parseInstructionStatement(line, line_num, filename, filename_suffix, tokens, operands, mnemonic, &token,
+                                       next_token_start_idx, next_token_stop_idx)) {
             success = false;
         }
     }
@@ -691,6 +697,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
     } else {
         s = NULL;
     }
+
     free((char *) mnemonic);
     free((char *) label);
     free(token);
