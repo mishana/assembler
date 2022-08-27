@@ -126,6 +126,8 @@ int getInstructionNumberOfOperands(const char *instruction) {
  * @param operand The operand string.
  */
 AddressingMode getAddressingMode(const char *operand) {
+    AddressingMode res;
+
     if (operand[0] == IMMEDIATE_ADDRESSING_PREFIX) {
         if (isNumeric(operand + 1)) {
             return IMMEDIATE_ADDRESSING;
@@ -146,9 +148,11 @@ AddressingMode getAddressingMode(const char *operand) {
         if (listLength(split_operand) == 2 && (strcmp(after_delim, "1") == 0 ||
                                                strcmp(after_delim, "2") == 0) &&
             strlen(before_delim) > 1 && isAlphaNumeric(before_delim)) {
-            return STRUCT_ADDRESSING;
+            res = STRUCT_ADDRESSING;
         } else {
-            return INVALID_ADDRESSING;
+            res = INVALID_ADDRESSING;
         }
+        listDestroy(split_operand);
+        return res;
     }
 }

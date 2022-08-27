@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <malloc.h>
+#include <assert.h>
 
 
 /**
@@ -43,7 +44,7 @@ bool strStartsWith(const char *str, const char *prefix, bool ignore_leading_whit
     }
 
     for (i = 0; i < prefix_len; ++i) {
-        if (str[start_substring_from + i] != prefix[i])
+        if (strlen(str) > start_substring_from + i && str[start_substring_from + i] != prefix[i])
             return false;
     }
     return true;
@@ -225,13 +226,13 @@ char *strConcat(const char *s1, const char *s2) {
  * @param stop_idx the index of the last character to be counted
  */
 int strCountCharInRange(const char *s, char c, int start_idx, int stop_idx) {
-    const char *p = s + start_idx;
     int count = 0;
     int i = start_idx;
+
     while (i < stop_idx) {
-        if (*p == c)
+        if (strlen(s) > i && s[i] == c) {
             count++;
-        p++;
+        }
         i++;
     }
     return count;

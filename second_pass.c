@@ -88,10 +88,13 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
     char line[LINE_BUFFER_LEN];
     const char *entry_operand;
     SymtabEntry found_entry;
-    Statement s;
+    Statement s = NULL;
 
     while (fgets(line, LINE_BUFFER_LEN, src_file) != NULL) {
         line_num++;
+        if (s) {
+            statementDestroy(s);
+        }
         s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, true);
         if (statementGetType(s) == EMPTY_LINE || statementGetType(s) == COMMENT) {
             continue;
@@ -120,6 +123,9 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
                 symtabEntrySetIsEntry(found_entry, true);
             }
         }
+    }
+    if (s) {
+        statementDestroy(s);
     }
     return success;
 }

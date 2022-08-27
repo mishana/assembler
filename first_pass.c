@@ -28,8 +28,8 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
 
     int i;
     int line_num = 0;
-    char line[LINE_BUFFER_LEN];
-    Statement s;
+    char line[LINE_BUFFER_LEN] = "";
+    Statement s = NULL;
     SymtabEntry entry;
     SymtabEntry found_entry;
     const char *extern_operand;
@@ -42,6 +42,10 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
             success = false;
             printf("Error in %s.%s line %d: line too long, exceeds 80 characters\n",
                    filename, SOURCE_FILE_SUFFIX, line_num);
+            continue;
+        }
+        if (s) {
+            statementDestroy(s);
         }
         s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, true);
         if (!s) {
@@ -112,6 +116,9 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
 
             machineCodeDestroy(mc);
         }
+    }
+    if (s) {
+        statementDestroy(s);
     }
 
     /* Adding the IC to the data symbols addresses. */

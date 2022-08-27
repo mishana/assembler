@@ -82,6 +82,7 @@ MachineCode machineCodeCreate(Statement s, int ic) {
         mc->struct_field_nums[i] = 0;
         mc->struct_names[i] = NULL;
         mc->labels[i] = NULL;
+        mc->operands[i] = NULL;
     }
     mc->words = NULL;
 
@@ -115,6 +116,7 @@ MachineCode machineCodeCreate(Statement s, int ic) {
             mc->size++; /* struct field num word */
 
             mc->struct_field_nums[i] = atoi(after_delim);
+            listDestroy(split_operand);
         }
         mc->is_extern[i] = false;
         mc->extern_words_index[i] = 0;
@@ -157,7 +159,7 @@ MachineCode machineCodeCopy(MachineCode mc) {
         copy->words = NULL;
     }
 
-    for (i = 0; i < copy->num_operands; ++i) {
+    for (i = 0; i < MAX_OPERANDS_COUNT; ++i) {
         copy->addressing_modes[i] = mc->addressing_modes[i];
         copy->values[i] = mc->values[i];
         copy->registers[i] = mc->registers[i];

@@ -230,15 +230,16 @@ parse(const char *line, int line_num, const char *filename, const char *filename
     int operand_id;
     Statement s;
 
+    /* skip if a comment line */
     if (isCommentLine(line)) {
         return statementCreate(line_num, COMMENT, line, NULL, NULL, NULL, NULL);
     }
-
+    /* check if an empty line, if so then skip */
     nextTokenInLine(line, &next_token_start_idx, &next_token_stop_idx);
     if (next_token_start_idx == -1) {
         return statementCreate(line_num, EMPTY_LINE, line, NULL, NULL, NULL, NULL);
     }
-
+    /* read the first token */
     tokens = listCreate((list_eq) strcmp, (list_copy) strdup, (list_free) free);
     token = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
     if (!token) {
@@ -635,6 +636,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
     } else {
         s = NULL;
     }
+    free((char *) mnemonic);
     free((char *) label);
     free(token);
     listDestroy(tokens);
