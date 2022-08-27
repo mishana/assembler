@@ -33,6 +33,22 @@ struct statement_t {
     List operands;
 };
 
+
+/**
+ * *|CURSOR_MARCADOR|*
+ *
+ * @param line the line to read from
+ * @param token_start_idx The index of the first character of the token.
+ * @param token_stop_idx the index of the first character **after** the token.
+ */
+static char *readNextToken(const char *line, int token_start_idx, int token_stop_idx) {
+    char *token = strndup(line + token_start_idx, token_stop_idx - token_start_idx);
+    if (!token) {
+        memoryAllocationError();
+    }
+    return token;
+}
+
 /**
  * It checks the syntax of the label.
  *
@@ -198,24 +214,84 @@ static bool isMacroEnd(const char *s) {
 }
 
 
-void nextTokenInLine(const char *line, int *next_token_start_idx_ptr, int *next_token_stop_idx_ptr) {
+static void advanceNextTokenInLine(const char *line, int *next_token_start_idx_ptr, int *next_token_stop_idx_ptr) {
     *next_token_start_idx_ptr = strFindNextNonWhitespace(line, *next_token_stop_idx_ptr);
     *next_token_stop_idx_ptr = strFindNextWhitespace(line, *next_token_start_idx_ptr);
 }
 
-void nextOperandInLine(const char *line, int *next_operand_start_idx_ptr, int *next_operand_stop_idx_ptr) {
-    *next_operand_start_idx_ptr = strFindNextNonWhitespaceAndDelimiter(line, *next_operand_stop_idx_ptr, OPERANDS_DELIM_CHAR);
-    *next_operand_stop_idx_ptr = strFindNextWhitespaceOrDelimiter(line, *next_operand_start_idx_ptr, OPERANDS_DELIM_CHAR);
+static void
+advanceNextOperandInLine(const char *line, int *next_operand_start_idx_ptr, int *next_operand_stop_idx_ptr) {
+    *next_operand_start_idx_ptr = strFindNextNonWhitespaceAndDelimiter(line, *next_operand_stop_idx_ptr,
+                                                                       OPERANDS_DELIM_CHAR);
+    *next_operand_stop_idx_ptr = strFindNextWhitespaceOrDelimiter(line, *next_operand_start_idx_ptr,
+                                                                  OPERANDS_DELIM_CHAR);
 }
 
+static bool
+parseMacroStartStatement(const char *line, int line_num, const char *filename, const char *filename_suffix, List tokens,
+                         List operands, const char *label, char **token, int next_token_start_idx, int next_token_stop_idx) {
+    bool success = true;
+    int prev_token_stop_idx;
+
+    if (label) {
+        printf("Error in %s%s line %d: Macro start statement can not have a label\n", filename, filename_suffix,
+               line_num);
+        success = false;
+    }
+    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, 0, next_token_start_idx) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter before macro start statement\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+
+    prev_token_stop_idx = next_token_stop_idx;
+    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+
+    if (next_token_start_idx == -1) {
+        printf("Error in %s%s line %d: Macro start statement must have exactly one argument\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter before macro name\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+    if (success) {
+        free(*token);
+        *token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
+        listAppend(tokens, *token);
+        listAppend(operands, *token);
+    }
+
+    prev_token_stop_idx = next_token_stop_idx;
+    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+    if (next_token_start_idx != -1) {
+        printf("Error in %s%s line %d: Macro start statement must have exactly one argument\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+    if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, strlen(line)) > 0) {
+        printf("Error in %s%s line %d: Misplaced comma delimiter after macro name\n", filename,
+               filename_suffix, line_num);
+        success = false;
+    }
+    success = success && macroCheckSyntax(token, line_num, filename, filename_suffix);
+
+    return success;
+}
 
 /**
- * It parses a line of text into a Statement.
+ * It parses a line of assembly code
  *
- * @param line The line of text to parse.
+ * @param line The line of code to parse.
+ * @param line_num the line number of the line being parsed
+ * @param filename The name of the file being parsed.
+ * @param filename_suffix The suffix of the file, e.g. ".asm"
+ * @param is_pre_assembly Whether or not this is called during the pre assembly phase.
  */
 Statement
-parse(const char *line, int line_num, const char *filename, const char *filename_suffix, bool check_non_macro_syntax) {
+parse(const char *line, int line_num, const char *filename, const char *filename_suffix, bool is_pre_assembly) {
     const char *label = NULL;
     bool success = true;
     int next_token_start_idx = 0, next_token_stop_idx = 0;
@@ -235,16 +311,13 @@ parse(const char *line, int line_num, const char *filename, const char *filename
         return statementCreate(line_num, COMMENT, line, NULL, NULL, NULL, NULL);
     }
     /* check if an empty line, if so then skip */
-    nextTokenInLine(line, &next_token_start_idx, &next_token_stop_idx);
+    advanceNextTokenInLine(line, &next_token_start_idx, &next_token_stop_idx);
     if (next_token_start_idx == -1) {
         return statementCreate(line_num, EMPTY_LINE, line, NULL, NULL, NULL, NULL);
     }
     /* read the first token */
     tokens = listCreate((list_eq) strcmp, (list_copy) strdup, (list_free) free);
-    token = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-    if (!token) {
-        memoryAllocationError();
-    }
+    token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
     listAppend(tokens, token);
 
     if (isLabel(token)) {
@@ -252,17 +325,14 @@ parse(const char *line, int line_num, const char *filename, const char *filename
         if (!label) {
             memoryAllocationError();
         }
-        nextTokenInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        advanceNextTokenInLine(line, &next_token_start_idx, &next_token_stop_idx);
         if (next_token_start_idx == -1) {
             free(token);
             token = NULL;
             success = false;
         } else {
             free(token);
-            token = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-            if (!token) {
-                memoryAllocationError();
-            }
+            token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
             listAppend(tokens, token);
         }
     }
@@ -278,7 +348,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
         type = OTHER;
     }
 
-    if (check_non_macro_syntax && label && !labelCheckSyntax(label, line_num, filename, filename_suffix)) {
+    if (!is_pre_assembly && label && !labelCheckSyntax(label, line_num, filename, filename_suffix)) {
         success = false;
     }
 
@@ -286,7 +356,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
     operands = listCreate((list_eq) strcmp, (list_copy) strdup, (list_free) free);
     prev_token_stop_idx = next_token_stop_idx;
 
-    if (type == OTHER && check_non_macro_syntax) {
+    if (type == OTHER && !is_pre_assembly) {
         printf("Error in %s%s line %d: Unknown directive/instruction, undefined statement\n", filename, filename_suffix,
                line_num);
         success = false;
@@ -301,7 +371,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                    filename_suffix, line_num);
             success = false;
         }
-        nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
         if (next_token_start_idx == -1) {
             printf("Error in %s%s line %d: Macro start statement must have exactly one argument\n", filename,
                    filename_suffix, line_num);
@@ -314,16 +384,13 @@ parse(const char *line, int line_num, const char *filename, const char *filename
         }
         if (success) {
             free(token);
-            token = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-            if (!token) {
-                memoryAllocationError();
-            }
+            token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
             listAppend(tokens, token);
             listAppend(operands, token);
         }
 
         prev_token_stop_idx = next_token_stop_idx;
-        nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
         if (next_token_start_idx != -1) {
             printf("Error in %s%s line %d: Macro start statement must have exactly one argument\n", filename,
                    filename_suffix, line_num);
@@ -334,7 +401,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                    filename_suffix, line_num);
             success = false;
         }
-        macroCheckSyntax(token, line_num, filename, filename_suffix);
+        success = success && macroCheckSyntax(token, line_num, filename, filename_suffix);
     } else if (type == MACRO_END) {
         if (label) {
             printf("Error in %s%s line %d: Macro end statement can not have a label\n", filename, filename_suffix,
@@ -347,7 +414,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
             success = false;
         }
         prev_token_stop_idx = next_token_stop_idx;
-        nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
         if (next_token_start_idx != -1) {
             printf("Error in %s%s line %d: Macro end statement must have no arguments\n", filename, filename_suffix,
                    line_num);
@@ -358,19 +425,16 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                    filename_suffix, line_num);
             success = false;
         }
-    } else if (type == DIRECTIVE && check_non_macro_syntax) {
+    } else if (type == DIRECTIVE && !is_pre_assembly) {
         prev_token_stop_idx = next_token_stop_idx;
-        nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+        advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
         if (next_token_start_idx == -1) {
             printf("Error in %s%s line %d: Directive must have at least one argument\n", filename, filename_suffix,
                    line_num);
             success = false;
         } else {
             free(token);
-            token = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-            if (!token) {
-                memoryAllocationError();
-            }
+            token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
             listAppend(tokens, token);
             listAppend(operands, token);
         }
@@ -391,7 +455,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                 }
 
                 prev_token_stop_idx = next_token_stop_idx;
-                nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+                advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
                 if (next_token_start_idx == -1) {
                     break;
                 }
@@ -403,10 +467,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                     success = false;
                 } else {
                     free(token);
-                    token = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-                    if (!token) {
-                        memoryAllocationError();
-                    }
+                    token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
                     listAppend(tokens, token);
                     listAppend(operands, token);
                 }
@@ -426,16 +487,13 @@ parse(const char *line, int line_num, const char *filename, const char *filename
             }
             if (success) {
                 free(token);
-                token = strndup(line + string_start_idx, string_end_idx - string_start_idx + 1);
-                if (!token) {
-                    memoryAllocationError();
-                }
+                token = readNextToken(line, string_start_idx, string_end_idx + 1);
                 listAppend(tokens, token);
                 listAppend(operands, token);
             }
             next_token_start_idx = string_start_idx;
             next_token_stop_idx = string_end_idx + 1;
-            nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
             if (next_token_start_idx != -1) {
                 printf("Error in %s%s line %d: .string directive must have exactly one operand\n", filename,
                        filename_suffix, line_num);
@@ -469,10 +527,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                 success = false;
             }
             free(token);
-            token = strndup(line + string_start_idx, string_end_idx - string_start_idx + 1);
-            if (!token) {
-                memoryAllocationError();
-            }
+            token = readNextToken(line, string_start_idx, string_end_idx + 1);
             listAppend(tokens, token);
             listAppend(operands, token);
 
@@ -480,7 +535,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
 
         } else if (strcmp(mnemonic, DIRECTIVE_ENTRY) == 0) {
             prev_token_stop_idx = next_token_stop_idx;
-            nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
             if (next_token_start_idx != -1) {
                 printf("Error in %s%s line %d: Directive .entry must have exactly one argument\n", filename,
                        filename_suffix, line_num);
@@ -488,7 +543,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
             }
         } else { /* .extern */
             prev_token_stop_idx = next_token_stop_idx;
-            nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
             if (next_token_start_idx != -1) {
                 printf("Error in %s%s line %d: Directive .extern must have exactly one argument\n", filename,
                        filename_suffix, line_num);
@@ -501,9 +556,9 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                    line_num);
             success = false;
         }
-    } else if (check_non_macro_syntax) { /* instruction */
+    } else if (!is_pre_assembly) { /* instruction */
         if (is0OperandInstruction(token)) {
-            nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
             if (next_token_start_idx != -1) {
                 printf("Error in %s%s line %d: Instruction %s must have no operands\n", filename, filename_suffix,
                        line_num, token);
@@ -511,7 +566,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
             }
         } else if (is1OperandInstruction(token)) {
             prev_token_stop_idx = next_token_stop_idx;
-            nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
             if (next_token_start_idx == -1) {
                 printf("Error in %s%s line %d: Instruction %s must have exactly one operand\n", filename,
                        filename_suffix,
@@ -525,15 +580,12 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                 }
                 if (success) {
                     free(token);
-                    token = strndup(line + next_token_start_idx, next_token_stop_idx - next_token_start_idx);
-                    if (!token) {
-                        memoryAllocationError();
-                    }
+                    token = readNextToken(line, next_token_start_idx, next_token_stop_idx);
                     listAppend(tokens, token);
                     listAppend(operands, token);
 
                     prev_token_stop_idx = next_token_stop_idx;
-                    nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+                    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
                     if (next_token_start_idx != -1) {
                         printf("Error in %s%s line %d: Instruction %s must have exactly one operand\n", filename,
                                filename_suffix, line_num, token);
@@ -558,7 +610,7 @@ parse(const char *line, int line_num, const char *filename, const char *filename
             AddressingMode mode_dest;
 
             prev_token_stop_idx = next_token_stop_idx;
-            nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+            advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
             if (next_token_start_idx == -1) {
                 printf("Error in %s%s line %d: Instruction %s must have exactly two operands\n", filename,
                        filename_suffix,
@@ -579,13 +631,14 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                     listAppend(operands, operand_src);
 
                     prev_token_stop_idx = next_token_stop_idx;
-                    nextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
+                    advanceNextOperandInLine(line, &next_token_start_idx, &next_token_stop_idx);
                     if (next_token_start_idx == -1) {
                         printf("Error in %s%s line %d: Instruction %s must have exactly two operands\n", filename,
                                filename_suffix, line_num, token);
                         success = false;
                     } else {
-                        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) != 1) {
+                        if (strCountCharInRange(line, OPERANDS_DELIM_CHAR, prev_token_stop_idx, next_token_start_idx) !=
+                            1) {
                             printf("Error in %s%s line %d: Must have exactly one comma delimiter between 1st and 2nd operands\n",
                                    filename, filename_suffix, line_num);
                             success = false;
@@ -601,11 +654,13 @@ parse(const char *line, int line_num, const char *filename, const char *filename
                         mode_dest = getAddressingMode(operand_dest);
 
                         if (mode_src == INVALID_ADDRESSING) {
-                            printf("Error in %s%s line %d: invalid source operand\n", filename, filename_suffix, line_num);
+                            printf("Error in %s%s line %d: invalid source operand\n", filename, filename_suffix,
+                                   line_num);
                             success = false;
                         }
                         if (mode_dest == INVALID_ADDRESSING) {
-                            printf("Error in %s%s line %d: invalid destination operand\n", filename, filename_suffix, line_num);
+                            printf("Error in %s%s line %d: invalid destination operand\n", filename, filename_suffix,
+                                   line_num);
                             success = false;
                         }
                         if (success && !isValidAddressing_2_OP(mnemonic, mode_src, mode_dest)) {

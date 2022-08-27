@@ -13,7 +13,7 @@ typedef enum {
 typedef struct statement_t *Statement;
 
 Statement
-parse(const char *line, int line_num, const char *filename, const char *filename_suffix, bool check_non_macro_syntax);
+parse(const char *line, int line_num, const char *filename, const char *filename_suffix, bool is_pre_assembly);
 
 Statement
 statementCreate(int line_num, StatementType type, const char *raw_text, const char *label, const char *mnemonic, List operands,

@@ -48,7 +48,7 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
     while (fgets(line, VERY_LARGE_BUFFER_LEN, src_file) != NULL) {
         /* It's parsing the line. */
         line_num++;
-        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, false);
+        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, true);
         if (!s) { /* Parsing failed */
             continue;
         }

@@ -95,7 +95,7 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
         if (s) {
             statementDestroy(s);
         }
-        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, true);
+        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, false);
         if (statementGetType(s) == EMPTY_LINE || statementGetType(s) == COMMENT) {
             continue;
         }

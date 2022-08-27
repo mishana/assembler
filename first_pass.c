@@ -47,7 +47,7 @@ bool run_first_pass_aux(FILE *src_file, const char *filename, List symtab, List 
         if (s) {
             statementDestroy(s);
         }
-        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, true);
+        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, false);
         if (!s) {
             success = false;
             continue;
