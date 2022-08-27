@@ -1,30 +1,6 @@
 #include "types_utils.h"
 #include <ctype.h>
-#include <string.h>
 
-/**
- * It checks if the string is a string.
- *
- * @param str The string to check
- */
-bool isString(const char *str) {
-    return str[0] == '\"' && str[strlen(str) - 1] == '\"';
-}
-
-/**
- * It checks if the string is alphabetic.
- *
- * @param str The string to check
- */
-bool isAlpha(const char *str) {
-    int i;
-    for (i = 0; str[i] != '\0'; i++) {
-        if (!isalpha(str[i])) {
-            return false;
-        }
-    }
-    return true;
-}
 
 /**
  * It checks if the string is a number.

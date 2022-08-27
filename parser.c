@@ -10,8 +10,6 @@
 #include "rules.h"
 #include "types_utils.h"
 
-#define WHITESPACE_DELIM " \t\n "
-#define OPERANDS_DELIM ","
 #define OPERANDS_DELIM_CHAR ','
 #define LABEL_SUFFUX ":"
 #define COMMENT_PREFIX ";"
