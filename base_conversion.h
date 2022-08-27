@@ -1,7 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #ifndef ASSEMBLER_BASE_CONVERSION_H
 #define ASSEMBLER_BASE_CONVERSION_H
 
@@ -14,4 +10,4 @@ char *decimalToBinary(int p_val, char *buf, size_t num_bits);
 
 char *binaryToBase32Word(const char *binary, char *base32_word);
 
-#endif //ASSEMBLER_BASE_CONVERSION_H
+#endif

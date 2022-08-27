@@ -1,7 +1,3 @@
-//
-// Created by misha on 15/08/2022.
-//
-
 #include <string.h>
 #include "rules.h"
 #include "const_tables.h"
@@ -22,7 +18,7 @@ bool isValidAddressing_2_OP(const char *instruction, int src_addressing_mode, in
     } else if (strcmp(instruction, "lea") == 0) {
         return (src_addressing_mode == DIRECT_ADDRESSING || src_addressing_mode == STRUCT_ADDRESSING)
                && dst_addressing_mode != IMMEDIATE_ADDRESSING;
-    } else { // not a valid 2-op instruction
+    } else { /* not a valid 2-op instruction */
         return false;
     }
 }
@@ -40,7 +36,7 @@ bool isValidAddressing_1_OP(const char *instruction, int addressing_mode) {
         return addressing_mode != IMMEDIATE_ADDRESSING;
     } else if (strcmp(instruction, "prn") == 0) {
         return true;
-    } else { // not a valid 1-op instruction
+    } else { /* not a valid 1-op instruction */
         return false;
     }
 }

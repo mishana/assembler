@@ -1,7 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #ifndef ASSEMBLER_MEMORY_CODE_H
 #define ASSEMBLER_MEMORY_CODE_H
 
@@ -28,4 +24,4 @@ size_t calcDirectiveDataSize(Statement s);
 
 void memoryCodeToObjFile(MemoryCode mc, FILE *f, int start_address_offset);
 
-#endif //ASSEMBLER_MEMORY_CODE_H
+#endif

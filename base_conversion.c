@@ -1,13 +1,7 @@
-//
-// Created by misha on 27/07/2022.
-//
-
-#include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <math.h>
 #include "base_conversion.h"
-#include "errors.h"
 
 #define CHK(_n) ((_n) <= sz)
 
@@ -24,17 +18,19 @@ char BASE32_DIGITS[] = {'!', '@', '#', '$', '%', '^', '&', '*', '<', '>',
  * @param binary A string of 1's and 0's
  */
 int binaryToDecimal(const char *binary, int num_bits) {
-//    size_t num_bits = strlen(binary);
+    int decimal, bit_weight, bit_value;
+    size_t i;
+
     assert(num_bits <= strlen(binary));
-    int decimal = 0;
+    decimal = 0;
 
     /* Calculating the weight of the most significant bit. */
-    int bit_weight = (int) pow(2, num_bits - 1);
-    for (size_t i = 0; i < num_bits; ++i) {
+    bit_weight = (int) pow(2, num_bits - 1);
+    for (i = 0; i < num_bits; ++i) {
         assert(binary[i] == '0' || binary[i] == '1');
 
         /* It converts the character '0' or '1' to the integer 0 or 1. */
-        int bit_value = binary[i] - '0';
+        bit_value = binary[i] - '0';
 
         decimal += bit_value * bit_weight;
         bit_weight /= 2;
@@ -51,6 +47,7 @@ int binaryToDecimal(const char *binary, int num_bits) {
  * @param sz The size of the buffer.
  */
 char *decimalToBinary(int p_val, char *buf, size_t num_bits) {
+    unsigned val;
     size_t sz = num_bits + 1;
     assert(CHK(2)); /* at least two bytes of buffer space */
     buf += sz; /* we start from the end, backwards to avoid having to use
@@ -63,7 +60,7 @@ char *decimalToBinary(int p_val, char *buf, size_t num_bits) {
      * the sign bit as a normal bit, which makes the assumption that
      * integers are stored in two's complement.  This is essentially
      * nonportable code, but it will work in the stated assumptions. */
-    unsigned val = (unsigned) p_val;
+    val = (unsigned) p_val;
 
     /* the first below is the second char we check
      * above */

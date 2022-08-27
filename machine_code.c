@@ -1,7 +1,3 @@
-//
-// Created by misha on 17/08/2022.
-//
-
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
@@ -26,31 +22,30 @@
 
 struct machine_code_t {
     int line_num;
-    int address; // 0-255
+    int address;
 
-    int opcode; // 0-15
-    int coding_method;  // A, E, R
+    int opcode;  /* 0-15 */
+    int coding_method;  /* A, E, R */
 
-    // first dest then src
     AddressingMode addressing_modes[MAX_OPERANDS_COUNT];
 
-    int values[MAX_OPERANDS_COUNT]; // 0-255
+    int values[MAX_OPERANDS_COUNT];
 
-    int registers[MAX_OPERANDS_COUNT]; // 0-15
+    int registers[MAX_OPERANDS_COUNT];
 
-    int label_addresses[MAX_OPERANDS_COUNT]; // 0-255
+    int label_addresses[MAX_OPERANDS_COUNT];
 
     const char *labels[MAX_OPERANDS_COUNT];
 
-    int struct_addresses[MAX_OPERANDS_COUNT]; // 0-255
-    int struct_field_nums[MAX_OPERANDS_COUNT]; // 1/2
+    int struct_addresses[MAX_OPERANDS_COUNT];
+    int struct_field_nums[MAX_OPERANDS_COUNT]; /* 1/2 */
 
     const char *struct_names[MAX_OPERANDS_COUNT];
 
     bool is_extern[MAX_OPERANDS_COUNT];
-    int extern_words_index[MAX_OPERANDS_COUNT]; // 0-(size-1)
+    int extern_words_index[MAX_OPERANDS_COUNT]; /* 0-(size-1) */
 
-    int num_operands; // 0/1/2
+    int num_operands; /* 0/1/2 */
     const char *operands[MAX_OPERANDS_COUNT];
 
     size_t size;
@@ -60,6 +55,14 @@ struct machine_code_t {
 
 MachineCode machineCodeCreate(Statement s, int ic) {
     MachineCode mc = malloc(sizeof(*mc));
+    int i;
+    List instruction_operands;
+    int num_operands;
+    const char *operand;
+    const char *before_delim;
+    const char *after_delim;
+    AddressingMode addressing_mode;
+
     if (!mc) {
         memoryAllocationError();
     }
@@ -67,10 +70,10 @@ MachineCode machineCodeCreate(Statement s, int ic) {
     mc->line_num = statementGetLineNum(s);
     mc->address = ic;
     mc->opcode = getInstructionCode(statementGetMnemonic(s));
-    mc->size = 1; // opcode word
+    mc->size = 1; /* opcode word */
 
     /* It's initializing the fields of the struct. */
-    for (int i = 0; i < MAX_OPERANDS_COUNT; ++i) {
+    for (i = 0; i < MAX_OPERANDS_COUNT; ++i) {
         mc->addressing_modes[i] = EMPTY_ADDRESSING;
         mc->values[i] = 0;
         mc->registers[i] = 0;
@@ -82,34 +85,34 @@ MachineCode machineCodeCreate(Statement s, int ic) {
     }
     mc->words = NULL;
 
-    List instruction_operands = statementGetOperands(s);
-    int num_operands = listLength(instruction_operands);
+    instruction_operands = statementGetOperands(s);
+    num_operands = listLength(instruction_operands);
     assert(num_operands == getInstructionNumberOfOperands(statementGetMnemonic(s)));
 
     mc->num_operands = num_operands;
 
-    for (int i = 0; i < num_operands; ++i) {
-        mc->size++; // operand value/address word
+    for (i = 0; i < num_operands; ++i) {
+        mc->size++; /* operand value/address word */
 
-        const char *operand = listGetDataAt(instruction_operands, i);
+        operand = listGetDataAt(instruction_operands, i);
         mc->operands[i] = strdup(operand);
 
-        AddressingMode addressing_mode = getAddressingMode(operand);
+        addressing_mode = getAddressingMode(operand);
         mc->addressing_modes[i] = addressing_mode;
 
         if (addressing_mode == IMMEDIATE_ADDRESSING) {
-            mc->values[i] = atoi(operand + 1); // +1 to skip the '#'
+            mc->values[i] = atoi(operand + 1); /* +1 to skip the '#' */
         } else if (addressing_mode == REGISTER_ADDRESSING) {
-            mc->registers[i] = atoi(operand + 1); // +1 to skip the 'r'
+            mc->registers[i] = atoi(operand + 1); /* +1 to skip the 'r' */
         } else if (addressing_mode == DIRECT_ADDRESSING) {
             mc->labels[i] = strdup(operand);
         } else if (addressing_mode == STRUCT_ADDRESSING) {
             List split_operand = strSplit(operand, ".");
-            const char *before_delim = listGetDataAt(split_operand, 0);
-            const char *after_delim = listGetDataAt(split_operand, 1);
+            before_delim = listGetDataAt(split_operand, 0);
+            after_delim = listGetDataAt(split_operand, 1);
 
             mc->struct_names[i] = strdup(before_delim);
-            mc->size++; // struct field num word
+            mc->size++; /* struct field num word */
 
             mc->struct_field_nums[i] = atoi(after_delim);
         }
@@ -118,7 +121,7 @@ MachineCode machineCodeCreate(Statement s, int ic) {
     }
 
     if (mc->addressing_modes[0] == mc->addressing_modes[1] && mc->addressing_modes[0] == REGISTER_ADDRESSING) {
-        mc->size--; // remove the second operand word
+        mc->size--; /* remove the second operand word */
     }
 
     return mc;
@@ -130,6 +133,8 @@ int machineCodeCmp(MachineCode mc1, MachineCode mc2) {
 
 MachineCode machineCodeCopy(MachineCode mc) {
     MachineCode copy = malloc(sizeof(*copy));
+    int i;
+
     if (!copy) {
         memoryAllocationError();
     }
@@ -145,14 +150,14 @@ MachineCode machineCodeCopy(MachineCode mc) {
         if (!copy->words) {
             memoryAllocationError();
         }
-        for (int i = 0; i < mc->size; ++i) {
+        for (i = 0; i < mc->size; ++i) {
             copy->words[i] = strdup(mc->words[i]);
         }
     } else {
         copy->words = NULL;
     }
 
-    for (int i = 0; i < copy->num_operands; ++i) {
+    for (i = 0; i < copy->num_operands; ++i) {
         copy->addressing_modes[i] = mc->addressing_modes[i];
         copy->values[i] = mc->values[i];
         copy->registers[i] = mc->registers[i];
@@ -169,13 +174,14 @@ MachineCode machineCodeCopy(MachineCode mc) {
 }
 
 void machineCodeDestroy(MachineCode mc) {
+    int i;
     if (mc->words) {
-        for (int i = 0; i < mc->size; ++i) {
+        for (i = 0; i < mc->size; ++i) {
             free(mc->words[i]);
         }
         free(mc->words);
     }
-    for (int i = 0; i < mc->num_operands; ++i) {
+    for (i = 0; i < mc->num_operands; ++i) {
         free((void *) mc->labels[i]);
         free((void *) mc->struct_names[i]);
         free((void *) mc->operands[i]);
@@ -190,8 +196,9 @@ size_t machineCodeGetSize(MachineCode mc) {
 static bool
 updateAndCheckSymbolAddresses(MachineCode mc, List symtab, const char *filename, const char *filename_suffix,
                               int start_address) {
+    int i;
     bool success = true;
-    for (int i = 0; i < mc->num_operands; ++i) {
+    for (i = 0; i < mc->num_operands; ++i) {
         if (mc->addressing_modes[i] == DIRECT_ADDRESSING) {
             SymtabEntry found_entry = symbolTableFindByName(symtab, mc->labels[i]);
             if (!found_entry) {
@@ -226,15 +233,20 @@ updateAndCheckSymbolAddresses(MachineCode mc, List symtab, const char *filename,
  */
 bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filename_suffix, const char *filename,
                                  int start_address_offset) {
+    char **words;
+    int i;
+    char binary_buf[BINARY_WORD_SIZE + 1];
+    int operand_word_index;
+
     if (!updateAndCheckSymbolAddresses(mc, symtab, filename, filename_suffix, start_address_offset)) {
         return false;
     }
 
-    char **words = malloc(sizeof(*words) * mc->size);
+    words = malloc(sizeof(*words) * mc->size);
     if (!words) {
         memoryAllocationError();
     }
-    for (int i = 0; i < mc->size; ++i) {
+    for (i = 0; i < mc->size; ++i) {
         words[i] = malloc(sizeof(char) * (BASE32_WORD_SIZE + 1));
         if (!words[i]) {
             memoryAllocationError();
@@ -242,9 +254,7 @@ bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filena
     }
     mc->words = words;
 
-    char binary_buf[BINARY_WORD_SIZE + 1];
-
-    // opcode word
+    /* opcode word */
     decimalToBinary(mc->opcode, binary_buf, OPCODE_NUM_BITS);
     if (mc->num_operands == 0) {
         decimalToBinary(0, binary_buf + OPCODE_NUM_BITS, ADDRESSING_NUM_BITS);
@@ -262,7 +272,7 @@ bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filena
     decimalToBinary(A, binary_buf + OPCODE_NUM_BITS + 2 * ADDRESSING_NUM_BITS, CODING_METHOD_NUM_BITS);
     binaryToBase32Word(binary_buf, words[0]);
 
-    // operand value/address word(s)
+    /* operand value/address word(s) */
     if (mc->addressing_modes[0] == REGISTER_ADDRESSING && mc->addressing_modes[1] == REGISTER_ADDRESSING) {
         assert(mc->size == 2);
         decimalToBinary(mc->registers[0], binary_buf, REGISTER_NUM_BITS);
@@ -272,8 +282,8 @@ bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filena
         return true;
     }
 
-    int operand_word_index = 1;
-    for (int i = 0; i < mc->num_operands; ++i) {
+    operand_word_index = 1;
+    for (i = 0; i < mc->num_operands; ++i) {
         if (mc->addressing_modes[i] == IMMEDIATE_ADDRESSING) {
             decimalToBinary(mc->values[i], binary_buf, BINARY_WORD_SIZE - 2);
             decimalToBinary(A, binary_buf + OPCODE_NUM_BITS + 2 * ADDRESSING_NUM_BITS, CODING_METHOD_NUM_BITS);
@@ -338,8 +348,9 @@ void machineCodeToObjFile(MachineCode mc, FILE *f, int start_address_offset) {
     int start_address = mc->address + start_address_offset;
     char binary_buf[BINARY_WORD_SIZE + 1];
     char base32_buf[BASE32_WORD_SIZE + 1];
+    int i;
 
-    for (int i = 0; i < mc->size; ++i) {
+    for (i = 0; i < mc->size; ++i) {
         decimalToBinary(start_address + i, binary_buf, BINARY_WORD_SIZE);
         binaryToBase32Word(binary_buf, base32_buf);
         fprintf(f, "%s %s\n", base32_buf, mc->words[i]);

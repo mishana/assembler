@@ -1,7 +1,3 @@
-//
-// Created by misha on 26/08/2022.
-//
-
 #include "types_utils.h"
 #include <ctype.h>
 #include <string.h>
@@ -21,7 +17,8 @@ bool isString(const char *str) {
  * @param str The string to check
  */
 bool isAlpha(const char *str) {
-    for (int i = 0; str[i] != '\0'; i++) {
+    int i;
+    for (i = 0; str[i] != '\0'; i++) {
         if (!isalpha(str[i])) {
             return false;
         }
@@ -54,7 +51,8 @@ bool isNumeric(const char *str) {
  * @param str The string to check
  */
 bool isAlphaNumeric(const char *str) {
-    for (int i = 0; str[i] != '\0'; i++) {
+    int i;
+    for (i = 0; str[i] != '\0'; i++) {
         if (!isalnum(str[i])) {
             return false;
         }

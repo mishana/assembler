@@ -1,12 +1,9 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #include <malloc.h>
 #include <string.h>
 #include <stdbool.h>
 #include "symtab.h"
 #include "errors.h"
+#include "str_utils.h"
 
 
 struct symtab_entry_t {
@@ -14,8 +11,6 @@ struct symtab_entry_t {
     int value;
 
     bool is_entry;
-    // TODO: get rid of this
-    bool is_struct;
 
     int line_num;
     SymbolType type;
@@ -34,7 +29,7 @@ struct symtab_entry_t {
  * @return A new symbol table entry.
  */
 SymtabEntry
-symtabEntryCreate(const char *name, int value, bool is_entry, bool is_struct, int line_num, SymbolType type) {
+symtabEntryCreate(const char *name, int value, bool is_entry, int line_num, SymbolType type) {
     SymtabEntry e = malloc(sizeof(*e));
     if (!e) {
         memoryAllocationError();
@@ -64,7 +59,7 @@ int symtabEntryCmp(SymtabEntry e1, SymtabEntry e2) {
  * @param e The entry to copy.
  */
 SymtabEntry symtabEntryCopy(SymtabEntry e) {
-    return symtabEntryCreate(e->name, e->value, e->is_entry, e->is_struct, e->line_num, e->type);
+    return symtabEntryCreate(e->name, e->value, e->is_entry, e->line_num, e->type);
 }
 
 /**
@@ -123,15 +118,6 @@ SymbolType symtabEntryGetType(SymtabEntry e) {
 }
 
 /**
- * It checks if the entry is a struct.
- *
- * @param e The entry to check
- */
-bool symtabEntryIsStruct(SymtabEntry e) {
-    return e->is_struct;
-}
-
-/**
  * It sets the value of the symbol table entry.
  *
  * @param e The symbol table entry to set the value of.
@@ -159,8 +145,8 @@ void symtabEntrySetIsEntry(SymtabEntry e, bool is_entry) {
  * @param name The name of the symbol to find.
  */
 SymtabEntry symbolTableFindByName(List symtab, const char *name) {
-    // This is a hack to get the entry in the symbol table
-    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, false, 0, SYMBOL_DATA);
+    /* This is a hack to get the entry in the symbol table */
+    SymtabEntry dummy_entry = symtabEntryCreate(name, 0, false, 0, SYMBOL_DATA);
     SymtabEntry found_entry;
     if (listFind(symtab, dummy_entry, (void **) &found_entry) == LIST_NOT_FOUND) {
         found_entry = NULL;

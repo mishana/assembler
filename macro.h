@@ -1,7 +1,3 @@
-//
-// Created by misha on 30/07/2022.
-//
-
 #ifndef ASSEMBLER_MACRO_H
 #define ASSEMBLER_MACRO_H
 
@@ -22,4 +18,4 @@ const char *macroGetName(Macro m);
 
 int macroGetDefLineNum(Macro m);
 
-#endif //ASSEMBLER_MACRO_H
+#endif

@@ -1,7 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #ifndef ASSEMBLER_FIRST_PASS_H
 #define ASSEMBLER_FIRST_PASS_H
 
@@ -9,4 +5,4 @@
 
 bool run_first_pass(const char *filename, List *symtab_ptr, List *machine_codes_ptr, List *memory_codes_ptr);
 
-#endif //ASSEMBLER_FIRST_PASS_H
+#endif

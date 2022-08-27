@@ -1,7 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #ifndef ASSEMBLER_CONST_TABLES_H
 #define ASSEMBLER_CONST_TABLES_H
 
@@ -54,4 +50,4 @@ bool is1OperandInstruction(const char *instruction);
 
 bool is2OperandInstruction(const char *instruction);
 
-#endif //ASSEMBLER_CONST_TABLES_H
+#endif

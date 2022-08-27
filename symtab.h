@@ -1,7 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #ifndef ASSEMBLER_SYMTAB_H
 #define ASSEMBLER_SYMTAB_H
 
@@ -17,7 +13,7 @@ typedef enum SymbolType {
 
 typedef struct symtab_entry_t *SymtabEntry;
 
-SymtabEntry symtabEntryCreate(const char *name, int value, bool is_entry, bool is_struct, int line_num, SymbolType type);
+SymtabEntry symtabEntryCreate(const char *name, int value, bool is_entry, int line_num, SymbolType type);
 
 int symtabEntryCmp(SymtabEntry e1, SymtabEntry e2);
 
@@ -41,4 +37,4 @@ void symtabEntrySetIsEntry(SymtabEntry e, bool is_entry);
 
 SymtabEntry symbolTableFindByName(List symtab, const char *name);
 
-#endif //ASSEMBLER_SYMTAB_H
+#endif

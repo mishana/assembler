@@ -1,6 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -13,6 +10,7 @@
 #include "macro.h"
 #include "parser.h"
 #include "file_utils.h"
+#include "str_utils.h"
 
 
 #define SOURCE_FILE_SUFFIX ".as"
@@ -37,41 +35,39 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
     const char *macro_name;
     char *macro_body = NULL;
     int macro_def_line_num;
+    Statement s;
+    Macro found_macro;
+    Macro m;
+    ListResult res;
+    char *tmp;
+    const char *first_word;
+    Macro dummy;
 
     int line_num = 0;
-    char line[VERY_LARGE_BUFFER_LEN]; // we want to be able to copy the lines as is at this stage
+    char line[VERY_LARGE_BUFFER_LEN]; /* we want to be able to copy the lines as is at this stage */
     while (fgets(line, VERY_LARGE_BUFFER_LEN, src_file) != NULL) {
         /* It's parsing the line. */
         line_num++;
-        Statement s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX);
-        if (!s) { // Parsing failed.
+        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, false);
+        if (!s) { /* Parsing failed */
             continue;
         }
 
         if (statementGetType(s) == MACRO_START) {
             is_macro = true;
             macro_name = strdup(listGetDataAt(statementGetOperands(s), 0));
-            if (!statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX)) {
-                success = false;
-            }
             macro_def_line_num = line_num;
 
         } else if (statementGetType(s) == MACRO_END) {
-            if (!statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX)) {
-                success = false;
-            }
-            Macro m = macroCreate(macro_name, macro_body, macro_def_line_num);
+            m = macroCreate(macro_name, macro_body, macro_def_line_num);
+            res = listFind(macros, m, (void **) &found_macro);
 
-            Macro found_macro;
-            ListResult res = listFind(macros, m, (void **) &found_macro);
-
-            if (res == LIST_NOT_FOUND) {  // macro not found
+            if (res == LIST_NOT_FOUND) {
                 listAppend(macros, m);
-            } else { // found macro
+            } else { /* found macro */
                 printf("Error in %s.%s line %d: Macro %s on was already previously defined on line %d\n",
                        filename, SOURCE_FILE_SUFFIX, macro_def_line_num, macro_name, macroGetDefLineNum(found_macro));
                 success = false;
-//                macroDestroy(found_macro);
             }
 
             macroDestroy(m);
@@ -81,8 +77,8 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
             free(macro_body);
             macro_body = NULL;
 
-        } else if (is_macro) { // inside macro - append to macro body
-            char *tmp = macro_body;
+        } else if (is_macro) { /* inside macro - append to macro body */
+            tmp = macro_body;
 
             if (!macro_body) {
                 /* It's appending the line to the macro body. */
@@ -95,23 +91,21 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
                 free(tmp);
             }
 
-        } else { // outside macro definition, check if referencing macro that needs unfolding
+        } else { /* outside macro definition, check if referencing macro that needs unfolding */
             if (statementGetType(s) == COMMENT || statementGetType(s) == EMPTY_LINE) {
                 fputs(line, dst_file);
                 statementDestroy(s);
                 continue;
             }
-            const char *first_word = listGetDataAt(statementGetTokens(s), 0);
+            first_word = listGetDataAt(statementGetTokens(s), 0);
 
             /* It's creating a dummy macro with the name of the first word in the line. */
-            Macro dummy = macroCreate(first_word, NULL, -1);
-            Macro found_macro;
-            ListResult res = listFind(macros, dummy, (void **) &found_macro);
+            dummy = macroCreate(first_word, NULL, -1);
+            res = listFind(macros, dummy, (void **) &found_macro);
             macroDestroy(dummy);
 
-            if (res == LIST_SUCCESS) { // found macro
+            if (res == LIST_SUCCESS) { /* found macro */
                 fputs(macroGetBody(found_macro), dst_file);
-//                macroDestroy(found_macro);
             } else {
                 fputs(line, dst_file);
             }

@@ -1,7 +1,3 @@
-//
-// Created by misha on 30/07/2022.
-//
-
 #include "str_utils.h"
 #include "errors.h"
 
@@ -36,16 +32,17 @@ bool strEndsWith(const char *str, const char *suffix) {
 bool strStartsWith(const char *str, const char *prefix, bool ignore_leading_whitespace) {
     size_t str_len = strlen(str);
     size_t prefix_len = strlen(prefix);
+    int start_substring_from = 0;
+    size_t i;
 
     if (str_len < prefix_len)
         return false;
 
-    int start_substring_from = 0;
     if (ignore_leading_whitespace) {
         start_substring_from = strFindNextNonWhitespace(str, 0);
     }
 
-    for (size_t i = 0; i < prefix_len; ++i) {
+    for (i = 0; i < prefix_len; ++i) {
         if (str[start_substring_from + i] != prefix[i])
             return false;
     }
@@ -87,6 +84,60 @@ size_t strFindNextNonWhitespace(const char *str, size_t from_idx) {
 }
 
 /**
+ * Find the next non-whitespace character that is not the delimiter.
+ *
+ * @param str The string to search in.
+ * @param from_idx The index to start searching from.
+ * @param delim The delimiter to look for.
+ */
+size_t strFindNextNonWhitespaceAndDelimiter(const char *str, size_t from_idx, char delim) {
+    while (from_idx < strlen(str) && (isspace(str[from_idx]) || str[from_idx] == delim)) {
+        from_idx++;
+    }
+
+    if (from_idx == strlen(str))
+        return -1;
+    else
+        return from_idx;
+}
+
+/**
+ * Find the next whitespace or delimiter character in a string.
+ *
+ * @param str The string to search in.
+ * @param from_idx The index to start searching from.
+ * @param delim The delimiter to look for.
+ */
+size_t strFindNextWhitespaceOrDelimiter(const char *str, size_t from_idx, char delim) {
+    while (from_idx < strlen(str) && !(isspace(str[from_idx]) || str[from_idx] == delim)) {
+        from_idx++;
+    }
+
+    if (from_idx == strlen(str))
+        return -1;
+    else
+        return from_idx;
+}
+
+/**
+ * Find the next occurrence of a character in a string.
+ *
+ * @param str The string to search in.
+ * @param from_idx The index to start searching from.
+ * @param c The character to search for.
+ */
+size_t strFindNextChar(const char *str, size_t from_idx, char c) {
+    while (from_idx < strlen(str) && str[from_idx] != c) {
+        from_idx++;
+    }
+
+    if (from_idx == strlen(str))
+        return -1;
+    else
+        return from_idx;
+}
+
+/**
  * It copies at most n characters from the string s into a newly allocated string, and returns a pointer to it
  *
  * @param s The string to be copied.
@@ -108,59 +159,25 @@ char *strndup(const char *s, size_t n) {
     return p;
 }
 
+
 /**
- * Replace all occurrences of old_substr in s with new_substr.
- * You must free the result if result is non-NULL.
+ * It returns a pointer to a copy of the string s.
  *
- * @param s The string to search and replace in.
- * @param old_substr The substring you want to replace.
- * @param new_substr The string to replace old_substr with.
+ * @param s The string to be duplicated.
  */
-char *strReplace(const char *s, const char *old_substr, const char *new_substr) {
-    char *result; // the return string
-    char *ins;    // the next insert point
-    char *tmp;    // varies
-    size_t len_rep;  // listLength of old_substr (the string to remove)
-    size_t len_with; // listLength of with (the string to replace old_substr with)
-    size_t len_front; // distance between old_substr and end of last old_substr
-    int count;    // number of replacements
+char *strdup(const char *s) {
+    size_t size;
+    char *p;
 
-    // sanity checks and initialization
-    if (!s || !old_substr)
+    if (!s) {
         return NULL;
-    len_rep = strlen(old_substr);
-    if (len_rep == 0)
-        return NULL; // empty old_substr causes infinite loop during count
-    if (!new_substr)
-        new_substr = "";
-    len_with = strlen(new_substr);
-
-    // count the number of replacements needed
-    tmp = strstr(s, old_substr);
-    for (count = 0; tmp; ++count) {
-        ins = tmp + len_rep;
-        tmp = strstr(ins, old_substr);
     }
-
-    tmp = result = malloc(strlen(s) + (len_with - len_rep) * count + 1);
-
-    if (!result)
-        return NULL;
-
-    // first time through the loop, all the variable are set correctly
-    // from here on,
-    //    tmp points to the end of the result string
-    //    ins points to the next occurrence of old_substr in s
-    //    s points to the remainder of s after "end of old_substr"
-    while (count--) {
-        ins = strstr(s, old_substr);
-        len_front = ins - s;
-        tmp = strncpy(tmp, s, len_front) + len_front;
-        tmp = strcpy(tmp, new_substr) + len_with;
-        s += len_front + len_rep; // move to next "end of old_substr"
+    size = strlen(s) + 1;
+    p = malloc(size);
+    if (p != NULL) {
+        memcpy(p, s, size);
     }
-    strcpy(tmp, s);
-    return result;
+    return p;
 }
 
 /**
@@ -172,8 +189,9 @@ char *strReplace(const char *s, const char *old_substr, const char *new_substr) 
 List strSplit(const char *s, const char *delim) {
     List l = listCreate((list_eq) strcmp, (list_copy) strdup, free);
     char *tmp = strdup(s);
+    char *token;
 
-    for (char *token = strtok(tmp, delim); token; token = strtok(NULL, delim)) {
+    for (token = strtok(tmp, delim); token; token = strtok(NULL, delim)) {
         listAppend(l, token);
     }
 
@@ -199,19 +217,22 @@ char *strConcat(const char *s1, const char *s2) {
 }
 
 /**
- * Counts the number of times a character appears in a string.
+ * Count the number of times a character appears in a string between two indices.
  *
- * @param s The string to search
- * @param c The character to count
+ * @param s The string to search in.
+ * @param c the character to count
+ * @param start_idx the index of the first character to check
+ * @param stop_idx the index of the last character to be counted
  */
-int strCountChar(const char *s, char c) {
-    const char *p = s;
+int strCountCharInRange(const char *s, char c, int start_idx, int stop_idx) {
+    const char *p = s + start_idx;
     int count = 0;
-
-    do {
+    int i = start_idx;
+    while (i < stop_idx) {
         if (*p == c)
             count++;
-    } while (*(p++));
-
+        p++;
+        i++;
+    }
     return count;
 }

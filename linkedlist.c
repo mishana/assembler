@@ -1,7 +1,3 @@
-//
-// Created by misha on 30/07/2022.
-//
-
 #include "linkedlist.h"
 
 #include<stdio.h>
@@ -67,13 +63,16 @@ List listCopy(List l) {
  * @param index The index of the element to copy.
  */
 List listCopyFromIndex(List l, int index) {
+    List lc;
+    int i = 0;
+    Node it;
+
     if (!l)
         return NULL;
 
-    List lc = listCreate(l->leq, l->lcopy, l->lfree);
+    lc = listCreate(l->leq, l->lcopy, l->lfree);
 
-    int i = 0;
-    for (Node it = l->head; it; it = it->next) {
+    for (it = l->head; it; it = it->next) {
         if (i >= index) {
             listAppend(lc, it->data);
         }
@@ -91,10 +90,12 @@ List listCopyFromIndex(List l, int index) {
  * @param copy_data a function that returns a copy of a data item.
  */
 ListResult listInsertFirst(List l, void *new_data) {
+    Node new_node;
+
     if (!l || !new_data)
         return LIST_NULL_ARGUMENT;
 
-    Node new_node = (Node) malloc(sizeof(*new_node));
+    new_node = (Node) malloc(sizeof(*new_node));
     if (!new_node)
         /* It's a function that prints an error message and exits the program. */
         memoryAllocationError();
@@ -116,10 +117,12 @@ ListResult listInsertFirst(List l, void *new_data) {
  * @param new_data the data to be inserted into the l
  */
 ListResult listAppend(List l, void *new_data) {
+    Node new_node, it;
+
     if (!l || !new_data)
         return LIST_NULL_ARGUMENT;
 
-    Node new_node = (Node) malloc(sizeof(*new_node));
+    new_node = (Node) malloc(sizeof(*new_node));
     if (new_node == NULL)
         memoryAllocationError();
 
@@ -131,7 +134,6 @@ ListResult listAppend(List l, void *new_data) {
         l->head = new_node;
     } else {
         /* Iterating through the l until it reaches the last node. */
-        Node it;
         for (it = l->head; it->next; it = it->next);
         it->next = new_node;
     }
@@ -148,10 +150,12 @@ ListResult listAppend(List l, void *new_data) {
  * @param found a pointer to a copy of the found value
  */
 ListResult listFind(List l, void *to_find, void **found) {
+    Node it;
+
     if (!l || !to_find)
         return LIST_NULL_ARGUMENT;
 
-    for (Node it = l->head; it; it = it->next) {
+    for (it = l->head; it; it = it->next) {
         /* Comparing the data in the node to the data we are looking for. */
         if (l->leq(it->data, to_find) == 0) {
             *found = it->data;
@@ -168,10 +172,12 @@ ListResult listFind(List l, void *to_find, void **found) {
  * @param to_find the value to find in the list
  */
 bool listContains(List l, void *to_find) {
+    Node it;
+
     if (!l || !to_find)
         return false;
 
-    for (Node it = l->head; it; it = it->next) {
+    for (it = l->head; it; it = it->next) {
         /* Comparing the data in the node to the data we are looking for. */
         if (l->leq(it->data, to_find) == 0) {
             return true;
@@ -216,13 +222,14 @@ void listDestroy(List l) {
  * @param index the index of the element you want to get the data of
  */
 const void *listGetDataAt(List l, int index) {
+    int i;
+    Node it;
+
     if (!l)
         return NULL;
     if (index < 0 || index >= listLength(l))
         return NULL;
 
-    int i;
-    Node it;
     /* It's a way to optimize the function. If the index is bigger than the last index we got, we start from the last
     index. */
     if (l->_inner_iterator_node && l->_inner_iterator_index <= index) {

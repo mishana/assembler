@@ -1,10 +1,7 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #include <string.h>
 #include <assert.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "memory_code.h"
 #include "const_tables.h"
 #include "errors.h"
@@ -20,6 +17,13 @@ struct memory_code_t {
 
 MemoryCode memoryCodeCreate(Statement s, int dc) {
     MemoryCode mem_c = malloc(sizeof(*mem_c));
+
+    const char *directive;
+    List operands;
+    const char *str;
+    int num_operands;
+    int i;
+
     if (!mem_c) {
         memoryAllocationError();
     }
@@ -31,29 +35,29 @@ MemoryCode memoryCodeCreate(Statement s, int dc) {
         memoryAllocationError();
     }
 
-    const char *directive = statementGetMnemonic(s);
-    List operands = statementGetOperands(s);
-    int num_operands = listLength(operands);
+    directive = statementGetMnemonic(s);
+    operands = statementGetOperands(s);
+    num_operands = listLength(operands);
 
     if (strcmp(directive, DIRECTIVE_DATA) == 0) {
-        for (int i = 0; i < num_operands; i++) {
+        for (i = 0; i < num_operands; i++) {
             mem_c->values[i] = atoi(listGetDataAt(operands, i));
         }
     } else if (strcmp(directive, DIRECTIVE_STRING) == 0) {
-        const char *str = listGetDataAt(operands, 0);
-        for (int i = 0; i < strlen(str + 1) - 1; i++) {
-            mem_c->values[i] = str[1 + i]; // +1 to skip the first '"'
+        str = listGetDataAt(operands, 0);
+        for (i = 0; i < strlen(str + 1) - 1; i++) {
+            mem_c->values[i] = str[1 + i]; /* +1 to skip the first '"' */
         }
         mem_c->values[mem_c->size - 1] = '\0';
     } else if (strcmp(directive, DIRECTIVE_STRUCT) == 0) {
         mem_c->values[0] = atoi(listGetDataAt(operands, 0));
 
-        const char *str = listGetDataAt(statementGetOperands(s), 1);
-        for (int i = 1; i <= strlen(str + 1) - 1; i++) {
-            mem_c->values[i] = str[i]; // +1 to skip the first '"' is not needed since i starts from 1
+        str = listGetDataAt(statementGetOperands(s), 1);
+        for (i = 1; i <= strlen(str + 1) - 1; i++) {
+            mem_c->values[i] = str[i]; /* +1 to skip the first '"' is not needed since i starts from 1 */
         }
         mem_c->values[mem_c->size - 1] = '\0';
-    } else { // .entry or .extern
+    } else { /* .entry or .extern */
         free(mem_c);
         return NULL;
     }
@@ -101,17 +105,15 @@ int memoryCodeGetStartAddress(MemoryCode mc) {
 size_t calcDirectiveDataSize(Statement s) {
     assert(statementGetType(s) == DIRECTIVE);
 
-    const char *directive = statementGetMnemonic(s);
-
-    if (strcmp(directive, DIRECTIVE_DATA) == 0) {
+    if (strcmp(statementGetMnemonic(s), DIRECTIVE_DATA) == 0) {
         return listLength(statementGetOperands(s));
-    } else if (strcmp(directive, DIRECTIVE_STRING) == 0) {
+    } else if (strcmp(statementGetMnemonic(s), DIRECTIVE_STRING) == 0) {
         const char *str = listGetDataAt(statementGetOperands(s), 0);
-        return strlen(str) - 2 + 1; // +1 for null terminator, -2 for quotes
-    } else if (strcmp(directive, DIRECTIVE_STRUCT) == 0) {
+        return strlen(str) - 2 + 1; /* +1 for null terminator, -2 for quotes */
+    } else if (strcmp(statementGetMnemonic(s), DIRECTIVE_STRUCT) == 0) {
         const char *str = listGetDataAt(statementGetOperands(s), 1);
-        return 1 + strlen(str) - 2 + 1; // +1 for null terminator, -2 for quotes
-    } else { // .entry or .extern
+        return 1 + strlen(str) - 2 + 1; /* +1 for null terminator, -2 for quotes */
+    } else { /* .entry or .extern */
         return 0;
     }
 }
@@ -123,7 +125,8 @@ void memoryCodeToObjFile(MemoryCode mc, FILE *f, int start_address_offset) {
     char base32_buf1[BASE32_WORD_SIZE + 1];
     char base32_buf2[BASE32_WORD_SIZE + 1];
 
-    for (int i = 0; i < mc->size; ++i) {
+    int i;
+    for (i = 0; i < mc->size; ++i) {
         decimalToBinary(start_address + i, binary_buf1, BINARY_WORD_SIZE);
         binaryToBase32Word(binary_buf1, base32_buf1);
 

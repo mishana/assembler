@@ -1,7 +1,3 @@
-//
-// Created by misha on 17/08/2022.
-//
-
 #ifndef ASSEMBLER_MACHINE_CODE_H
 #define ASSEMBLER_MACHINE_CODE_H
 
@@ -33,4 +29,4 @@ bool machineCodeUpdateFromSymtab(MachineCode mc, List symtab, const char *filena
 
 void machineCodeToObjFile(MachineCode mc, FILE *f, int start_address_offset);
 
-#endif //ASSEMBLER_MACHINE_CODE_H
+#endif

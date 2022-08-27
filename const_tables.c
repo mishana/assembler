@@ -1,7 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #include <string.h>
 #include <ctype.h>
 #include "const_tables.h"
@@ -32,17 +28,18 @@ const char *REGISTERS[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"};
  * @param word The word to check
  */
 bool isReservedWord(const char *word) {
-    for (int i = 0; i < DIRECTIVES_SIZE; i++) {
-        if (strcmp(word, DIRECTIVES[i] + 1) == 0) { // +1 to skip the '.'
+    int i;
+    for (i = 0; i < DIRECTIVES_SIZE; i++) {
+        if (strcmp(word, DIRECTIVES[i] + 1) == 0) { /* +1 to skip the '.' */
             return true;
         }
     }
-    for (int i = 0; i < INSTRUCTIONS_ALL_SIZE; i++) {
+    for (i = 0; i < INSTRUCTIONS_ALL_SIZE; i++) {
         if (strcmp(word, INSTRUCTIONS_ALL[i]) == 0) {
             return true;
         }
     }
-    for (int i = 0; i < REGISTERS_SIZE; i++) {
+    for (i = 0; i < REGISTERS_SIZE; i++) {
         if (strcmp(word, REGISTERS[i]) == 0) {
             return true;
         }
@@ -56,7 +53,8 @@ bool isReservedWord(const char *word) {
  * @param instruction The instruction to get the code for.
  */
 int getInstructionCode(const char *instruction) {
-    for (int i = 0; i < INSTRUCTIONS_ALL_SIZE; i++) {
+    int i;
+    for (i = 0; i < INSTRUCTIONS_ALL_SIZE; i++) {
         if (strcmp(instruction, INSTRUCTIONS_ALL[i]) == 0) {
             return i;
         }
@@ -70,7 +68,8 @@ int getInstructionCode(const char *instruction) {
  * @param instruction The instruction to check
  */
 bool is0OperandInstruction(const char *instruction) {
-    for (int i = 0; i < INSTRUCTIONS_0_OP_SIZE; ++i) {
+    int i;
+    for (i = 0; i < INSTRUCTIONS_0_OP_SIZE; ++i) {
         if (strcmp(instruction, INSTRUCTIONS_0_OP[i]) == 0)
             return true;
     }
@@ -83,7 +82,8 @@ bool is0OperandInstruction(const char *instruction) {
  * @param instruction The instruction to check
  */
 bool is1OperandInstruction(const char *instruction) {
-    for (int i = 0; i < INSTRUCTIONS_1_OP_SIZE; ++i) {
+    int i;
+    for (i = 0; i < INSTRUCTIONS_1_OP_SIZE; ++i) {
         if (strcmp(instruction, INSTRUCTIONS_1_OP[i]) == 0)
             return true;
     }
@@ -96,7 +96,8 @@ bool is1OperandInstruction(const char *instruction) {
  * @param instruction The instruction to check
  */
 bool is2OperandInstruction(const char *instruction) {
-    for (int i = 0; i < INSTRUCTIONS_2_OP_SIZE; ++i) {
+    int i;
+    for (i = 0; i < INSTRUCTIONS_2_OP_SIZE; ++i) {
         if (strcmp(instruction, INSTRUCTIONS_2_OP[i]) == 0)
             return true;
     }

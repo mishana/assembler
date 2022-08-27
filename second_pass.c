@@ -1,7 +1,3 @@
-//
-// Created by misha on 27/07/2022.
-//
-
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -26,19 +22,21 @@
  * @param obj_file the file pointer to the object file
  */
 static void writeCodeToObjectFile(List machine_codes, List memory_codes, FILE *obj_file) {
+    int i;
     size_t machine_code_size = 0, memory_code_size = 0;
-    for (int i = 0; i < listLength(machine_codes); i++) {
-        MachineCode mc = (MachineCode) listGetDataAt(machine_codes, i);
-        machine_code_size += machineCodeGetSize(mc);
-    }
-    for (int i = 0; i < listLength(memory_codes); i++) {
-        MemoryCode mc = (MemoryCode) listGetDataAt(memory_codes, i);
-        memory_code_size += memoryCodeGetSize(mc);
-    }
     char binary_buf1[BINARY_WORD_SIZE + 1];
     char binary_buf2[BINARY_WORD_SIZE + 1];
     char base32_buf1[BASE32_WORD_SIZE + 1];
     char base32_buf2[BASE32_WORD_SIZE + 1];
+
+    for (i = 0; i < listLength(machine_codes); i++) {
+        MachineCode mc = (MachineCode) listGetDataAt(machine_codes, i);
+        machine_code_size += machineCodeGetSize(mc);
+    }
+    for (i = 0; i < listLength(memory_codes); i++) {
+        MemoryCode mc = (MemoryCode) listGetDataAt(memory_codes, i);
+        memory_code_size += memoryCodeGetSize(mc);
+    }
 
     decimalToBinary(machine_code_size, binary_buf1, BINARY_WORD_SIZE);
     binaryToBase32Word(binary_buf1, base32_buf1);
@@ -48,11 +46,11 @@ static void writeCodeToObjectFile(List machine_codes, List memory_codes, FILE *o
 
     fprintf(obj_file, "%s %s\n", base32_buf1, base32_buf2);
 
-    for (int i = 0; i < listLength(machine_codes); i++) {
+    for (i = 0; i < listLength(machine_codes); i++) {
         MachineCode mc = (MachineCode) listGetDataAt(machine_codes, i);
         machineCodeToObjFile(mc, obj_file, START_ADDRESS_OFFSET);
     }
-    for (int i = 0; i < listLength(memory_codes); i++) {
+    for (i = 0; i < listLength(memory_codes); i++) {
         MemoryCode mc = (MemoryCode) listGetDataAt(memory_codes, i);
         memoryCodeToObjFile(mc, obj_file, START_ADDRESS_OFFSET);
     }
@@ -67,7 +65,8 @@ static void writeCodeToObjectFile(List machine_codes, List memory_codes, FILE *o
  */
 static bool updateAdressesFromSymtab(List machine_codes, List symtab, const char *filename) {
     bool success = true;
-    for (int i = 0; i < listLength(machine_codes); ++i) {
+    int i;
+    for (i = 0; i < listLength(machine_codes); ++i) {
         MachineCode mc = (MachineCode) listGetDataAt(machine_codes, i);
         success =
                 success && machineCodeUpdateFromSymtab(mc, symtab, SOURCE_FILE_SUFFIX, filename, START_ADDRESS_OFFSET);
@@ -87,9 +86,13 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
 
     int line_num = 0;
     char line[LINE_BUFFER_LEN];
+    const char *entry_operand;
+    SymtabEntry found_entry;
+    Statement s;
+
     while (fgets(line, LINE_BUFFER_LEN, src_file) != NULL) {
         line_num++;
-        Statement s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX);
+        s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX, true);
         if (statementGetType(s) == EMPTY_LINE || statementGetType(s) == COMMENT) {
             continue;
         }
@@ -99,8 +102,8 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
                 List entry_operands = statementGetOperands(s);
                 assert(listLength(entry_operands) == 1);
 
-                const char *entry_operand = listGetDataAt(entry_operands, 0);
-                SymtabEntry found_entry = symbolTableFindByName(symtab, entry_operand);
+                entry_operand = listGetDataAt(entry_operands, 0);
+                found_entry = symbolTableFindByName(symtab, entry_operand);
                 if (!found_entry) {
                     printf("Error in %s.%s line %d: entry '%s' not found\n", filename, SOURCE_FILE_SUFFIX,
                            line_num, entry_operand);
@@ -128,15 +131,18 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
  * @param filename the name of the file to write to
  */
 void writeEntriesFile(List symtab, const char *filename) {
+    int i;
     bool is_entry = false;
     FILE *entries_file = openFileWithSuffix(filename, "w", ENTRIES_FILE_SUFFIX);
-    for (int i = 0; i < listLength(symtab); ++i) {
+
+    char binary_buf[BINARY_WORD_SIZE + 1];
+    char base32_buf[BASE32_WORD_SIZE + 1];
+
+    for (i = 0; i < listLength(symtab); ++i) {
         SymtabEntry entry = (SymtabEntry) listGetDataAt(symtab, i);
         if (symtabEntryIsEntry(entry)) {
             is_entry = true;
-            char binary_buf[BINARY_WORD_SIZE + 1];
             decimalToBinary(symtabEntryGetValue(entry) + START_ADDRESS_OFFSET, binary_buf, BINARY_WORD_SIZE);
-            char base32_buf[BASE32_WORD_SIZE + 1];
             binaryToBase32Word(binary_buf, base32_buf);
             fprintf(entries_file, "%s %s\n", symtabEntryGetName(entry), base32_buf);
         }
@@ -157,17 +163,20 @@ void writeEntriesFile(List symtab, const char *filename) {
  * @param filename the name of the file to write to
  */
 void writeExternalFile(List machine_codes, const char *filename) {
+    int i, j;
     bool is_extern = false;
     FILE *extern_file = openFileWithSuffix(filename, "w", EXTERNAL_FILE_SUFFIX);
-    for (int i = 0; i < listLength(machine_codes); ++i) {
+
+    char binary_buf[BINARY_WORD_SIZE + 1];
+    char base32_buf[BASE32_WORD_SIZE + 1];
+
+    for (i = 0; i < listLength(machine_codes); ++i) {
         MachineCode mc = (MachineCode) listGetDataAt(machine_codes, i);
-        for (int j = 0; j < machineCodeGetNumOperands(mc); ++j) {
+        for (j = 0; j < machineCodeGetNumOperands(mc); ++j) {
             if (machineCodeGetIsExternOperand(mc, j)) {
                 is_extern = true;
-                char binary_buf[BINARY_WORD_SIZE + 1];
                 decimalToBinary(machineCodeGetExternalOperandAddress(mc, j) + START_ADDRESS_OFFSET, binary_buf,
                                 BINARY_WORD_SIZE);
-                char base32_buf[BASE32_WORD_SIZE + 1];
                 binaryToBase32Word(binary_buf, base32_buf);
                 fprintf(extern_file, "%s %s\n", machineCodeGetOperand(mc, j), base32_buf);
             }

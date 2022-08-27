@@ -1,7 +1,3 @@
-//
-// Created by misha on 17/08/2022.
-//
-
 #include <stdio.h>
 #include "file_utils.h"
 #include "str_utils.h"

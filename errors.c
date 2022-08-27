@@ -1,7 +1,3 @@
-//
-// Created by misha on 30/07/2022.
-//
-
 #include "errors.h"
 #include <stdio.h>
 #include <stdlib.h>

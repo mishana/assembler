@@ -1,12 +1,9 @@
-//
-// Created by misha on 30/07/2022.
-//
-
 #include <malloc.h>
 #include <string.h>
 
 #include "macro.h"
 #include "errors.h"
+#include "str_utils.h"
 
 
 /* Defining a new type called `struct macro_t` which is a struct with two fields: `name` and `body`. */

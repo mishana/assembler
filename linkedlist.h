@@ -1,7 +1,3 @@
-//
-// Created by misha on 30/07/2022.
-//
-
 #ifndef ASSEMBLER_LINKEDLIST_H
 #define ASSEMBLER_LINKEDLIST_H
 
@@ -41,4 +37,4 @@ void listDestroy(List l);
 
 const void *listGetDataAt(List l, int index);
 
-#endif //ASSEMBLER_LINKEDLIST_H
+#endif

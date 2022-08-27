@@ -1,7 +1,3 @@
-//
-// Created by misha on 26/08/2022.
-//
-
 #ifndef ASSEMBLER_TYPES_UTILS_H
 #define ASSEMBLER_TYPES_UTILS_H
 
@@ -15,4 +11,4 @@ bool isAlpha(const char *str);
 
 bool isString(const char *str);
 
-#endif //ASSEMBLER_TYPES_UTILS_H
+#endif
