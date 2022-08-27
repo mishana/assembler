@@ -89,7 +89,7 @@ bool updateEntriesInSymbolTable(const char *filename, FILE *src_file, List symta
     char line[LINE_BUFFER_LEN];
     while (fgets(line, LINE_BUFFER_LEN, src_file) != NULL) {
         line_num++;
-        Statement s = parse(line, line_num);
+        Statement s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX);
         if (statementGetType(s) == EMPTY_LINE || statementGetType(s) == COMMENT) {
             continue;
         }

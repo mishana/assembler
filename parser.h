@@ -16,7 +16,7 @@ typedef enum {
 
 typedef struct statement_t *Statement;
 
-Statement parse(const char *line, int line_num);
+Statement parse(const char *line, int line_num, const char *filename, const char *filename_suffix);
 
 Statement
 statementCreate(int line_num, StatementType type, const char *raw_text, const char *label, const char *mnemonic, List operands,

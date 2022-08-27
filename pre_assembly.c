@@ -43,7 +43,7 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
     while (fgets(line, VERY_LARGE_BUFFER_LEN, src_file) != NULL) {
         /* It's parsing the line. */
         line_num++;
-        Statement s = parse(line, line_num);
+        Statement s = parse(line, line_num, filename, SOURCE_FILE_SUFFIX);
         if (!s) { // Parsing failed.
             continue;
         }
@@ -51,11 +51,15 @@ bool unfold_macros(FILE *src_file, FILE *dst_file, const char *filename) {
         if (statementGetType(s) == MACRO_START) {
             is_macro = true;
             macro_name = strdup(listGetDataAt(statementGetOperands(s), 0));
-            success = success && statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX);
+            if (!statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX)) {
+                success = false;
+            }
             macro_def_line_num = line_num;
 
         } else if (statementGetType(s) == MACRO_END) {
-            success = success && statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX);
+            if (!statementCheckSyntax(s, filename, SOURCE_FILE_SUFFIX)) {
+                success = false;
+            }
             Macro m = macroCreate(macro_name, macro_body, macro_def_line_num);
 
             Macro found_macro;
